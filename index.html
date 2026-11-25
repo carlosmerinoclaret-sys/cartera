@@ -295,7 +295,7 @@ function typeFrom(t) {
 }
 const TYPES = {etf: 'ETF', stock: 'Acción', crypto: 'Cripto', commodity: 'Materia prima', index: 'Índice', fund: 'Fondo', other: 'Otro'};
 const PRESETS = [
-  {title: 'MSCI World', name: 'iShares Core MSCI World UCITS ETF (Acc)', symbol: 'EUNL.XETRA', type: 'etf', currency: 'EUR', isin: 'IE00B4L5Y983'},
+  {title: 'MSCI World · tu ETF de Trade Republic', name: 'iShares Core MSCI World UCITS ETF (Acc)', symbol: 'EUNL.F', type: 'etf', currency: 'EUR', isin: 'IE00B4L5Y983'},
   {title: 'S&P 500', name: 'iShares Core S&P 500 UCITS ETF (Acc)', symbol: 'SXR8.XETRA', type: 'etf', currency: 'EUR', isin: 'IE00B5BMR087'},
   {title: 'Nasdaq 100', name: 'iShares Nasdaq 100 UCITS ETF (Acc)', symbol: 'SXRV.XETRA', type: 'etf', currency: 'EUR', isin: 'IE00B53SZB19'},
   {title: 'Bitcoin', name: 'Bitcoin', symbol: 'BTC-EUR.CC', type: 'crypto', currency: 'EUR', isin: ''},
@@ -931,12 +931,12 @@ async function closeOn(symbol, day) {
 /* --- Nueva inversión --- */
 function openAdd() {
   let asset = null, searchTimer = null;
-  const presetsHTML = PRESETS.map((p, i) => `<button class="row" data-preset="${i}">${icon(p.symbol, p.type, 34)}<div class="grow"><div class="t1">${esc(p.title)}</div><div class="t2">${esc(p.name)} · ${esc(p.symbol)}</div></div></button>`).join('');
+  const presetsHTML = PRESETS.map((p, i) => `<button class="row" data-preset="${i}">${icon(p.symbol, p.type, 34)}<div class="grow"><div class="t1">${esc(p.title)}</div><div class="t2">${esc(p.name)} · ${esc(p.symbol)}${p.isin ? ' · ' + esc(p.isin) : ''}</div></div></button>`).join('');
   openSheet('Nueva inversión', `<div class="search">🔎<input id="q" placeholder="Nombre, ticker o ISIN" autocomplete="off" autocapitalize="characters" spellcheck="false"><span id="qs"></span></div>
     <div id="qerr" class="hint" style="padding-top:0">${configured() ? '' : 'La búsqueda necesita tu clave de EODHD (Ajustes). Puedes usar los accesos rápidos o introducirlo a mano.'}</div>
     <div id="results"></div><div class="ghead">Accesos rápidos</div><div class="card list">${presetsHTML}</div>
     <button class="btn sec2" data-act="manual">Introducir el activo manualmente</button>
-    <div class="hint">Formato: TICKER.BOLSA (EUNL.XETRA, AAPL.US, IWDA.AS, CSPX.LSE) · Cripto: BTC-EUR.CC</div>`, () => {});
+    <div class="hint">Puedes buscar por el ISIN que ves en Trade Republic (p. ej. IE00B4L5Y983). Para ver el precio hasta las 22:00, elige la cotización de Frankfurt (.F); Xetra (.XETRA) cierra a las 17:30. Formato: TICKER.BOLSA (EUNL.F, AAPL.US) · Cripto: BTC-EUR.CC</div>`, () => {});
   setSaveEnabled(false);
   let results = [];
   const body = $('#sbody');
