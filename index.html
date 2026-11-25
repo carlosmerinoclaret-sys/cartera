@@ -137,6 +137,63 @@ main{padding:calc(var(--sat) + 8px) 16px calc(96px + var(--sab));max-width:640px
 details summary{cursor:pointer;font-weight:600;padding:4px 0;list-style:none}
 details summary::-webkit-details-marker{display:none}
 .blur .bal{filter:blur(10px)}
+/* ---- Aspecto más moderno ---- */
+.card{box-shadow:0 1px 2px rgba(0,0,0,.04),0 10px 28px -18px rgba(0,0,0,.28)}
+.tabs{left:12px;right:12px;bottom:calc(8px + var(--sab));padding:6px;border-radius:30px;border:.5px solid var(--line);box-shadow:0 12px 30px -10px rgba(0,0,0,.35);max-width:520px;margin:0 auto}
+main{padding-bottom:calc(110px + var(--sab))}
+/* ---- Inicio (hub) ---- */
+body.hubmode{background:radial-gradient(130% 60% at 0% 0%,color-mix(in srgb,var(--accent) 30%,var(--bg)) 0%,var(--bg) 62%) fixed,var(--bg)}
+.hubhead{padding:14px 4px 2px}
+.hubhead .date{font-size:13px;font-weight:600;color:var(--muted)}
+.hubhead h1{font-size:34px;line-height:1.1;margin:2px 0 0;letter-spacing:-.02em}
+.widget{display:block;width:100%;text-align:left;border-radius:26px;padding:18px;margin:16px 0 4px;background:linear-gradient(145deg,#5b66fa,#3a2fb8);color:#fff;box-shadow:0 14px 30px -14px rgba(60,50,200,.7);position:relative;overflow:hidden}
+.widget .wl{font-size:13px;opacity:.85;font-weight:600;position:relative}
+.widget .wv{font:700 34px/1.1 -apple-system,"SF Pro Rounded",ui-rounded,sans-serif;margin:6px 0 8px;font-variant-numeric:tabular-nums;position:relative}
+.widget .wc{display:inline-flex;gap:6px;font-size:13px;font-weight:600;background:rgba(255,255,255,.18);padding:4px 10px;border-radius:99px;position:relative;font-variant-numeric:tabular-nums}
+.widget svg{position:absolute;right:0;bottom:0;width:58%;height:72%;opacity:.55}
+.apps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px 8px;margin:24px 0 8px}
+.app{display:flex;flex-direction:column;align-items:center;gap:7px;font-size:12px;font-weight:500;text-align:center;position:relative}
+.app .sq{width:64px;height:64px;border-radius:18px;display:grid;place-items:center;font-size:31px;color:#fff;box-shadow:0 8px 18px -8px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.35);transition:transform .15s}
+.app:active .sq{transform:scale(.9)}
+.app .nm{max-width:78px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app .badge{position:absolute;top:-6px;left:calc(50% + 20px);min-width:22px;height:22px;border-radius:11px;background:var(--loss);color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center;padding:0 6px;border:2px solid var(--bg)}
+.app.add .sq{background:var(--card);color:var(--muted);border:1.5px dashed var(--muted);box-shadow:none;font-size:28px}
+.mini{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:18px}
+/* ---- Espacios ---- */
+.spacehero{display:flex;align-items:center;gap:14px;margin:6px 0 16px}
+.spacehero .sq{width:60px;height:60px;border-radius:17px;font-size:30px;display:grid;place-items:center;flex:none;box-shadow:0 8px 18px -8px rgba(0,0,0,.45)}
+.prog{height:8px;border-radius:99px;background:var(--card2);overflow:hidden;margin-top:7px}
+.prog i{display:block;height:100%;border-radius:99px;background:var(--sc,var(--accent));transition:width .4s}
+.task{display:flex;align-items:center;gap:12px;padding:11px 0;width:100%;text-align:left}
+.task+.task{border-top:1px solid var(--line)}
+.chk{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid var(--muted);display:grid;place-items:center;color:#fff;font-size:14px;font-weight:700;transition:.15s}
+.chk.on{background:var(--sc,var(--accent));border-color:var(--sc,var(--accent))}
+.task.done .tt{text-decoration:line-through;color:var(--muted)}
+.due{font-size:12px;font-weight:600;padding:3px 8px;border-radius:99px;background:var(--card2);color:var(--muted);white-space:nowrap;flex:none}
+.due.late{background:color-mix(in srgb,var(--loss) 15%,transparent);color:var(--loss)}
+.due.soon{background:color-mix(in srgb,var(--warn) 18%,transparent);color:color-mix(in srgb,var(--warn) 75%,var(--ink))}
+.x{flex:none;width:34px;height:34px;border-radius:50%;color:var(--muted);font-size:20px}
+.addrow{display:flex;gap:8px;align-items:center;background:var(--card);border-radius:16px;padding:6px 6px 6px 14px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 10px 28px -18px rgba(0,0,0,.28)}
+.addrow input{border:0;background:none;font-size:16px;outline:none}
+.addrow input.txt{flex:1;padding:11px 0}
+.addrow input[type=date]{background:var(--card2);border-radius:10px;padding:8px 6px;font-size:14px;max-width:128px;min-height:38px}
+.addrow button{background:var(--sc,var(--accent));color:#fff;width:42px;height:42px;border-radius:12px;font-size:22px;flex:none}
+.note{display:block;width:100%;text-align:left;background:var(--card);border-radius:18px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 10px 28px -18px rgba(0,0,0,.28)}
+.note b{display:block;margin-bottom:4px}
+.note p{margin:0 0 6px;color:var(--muted);font-size:14px;white-space:pre-line;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.swatches,.emojis{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;padding:12px 16px}
+.swatches button{aspect-ratio:1;border-radius:50%;border:3px solid transparent;box-shadow:inset 0 0 0 2px var(--card)}
+.swatches button.on{border-color:var(--ink)}
+.emojis button{aspect-ratio:1;border-radius:12px;font-size:22px;background:var(--card2)}
+.emojis button.on{outline:2.5px solid var(--accent);background:var(--card)}
+.tpls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.tpl{background:var(--card);border-radius:18px;padding:14px;text-align:left;border:2px solid transparent}
+.tpl.on{border-color:var(--accent)}
+.tpl .e{font-size:28px}
+.tpl b{display:block;margin-top:4px}
+.tpl span{font-size:12px;color:var(--muted)}
+.editor{width:100%;min-height:45dvh;border:0;border-radius:14px;background:var(--card);padding:14px;font:16px/1.5 -apple-system,sans-serif;color:var(--ink);resize:vertical;outline:none}
+.titlein{width:100%;border:0;background:none;font-size:22px;font-weight:700;padding:6px 2px 12px;outline:none;color:var(--ink)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -217,7 +274,7 @@ const haptic = () => { try { navigator.vibrate?.(8); } catch {} };
    Persistencia (localStorage, solo en este iPhone)
    ============================================================ */
 const KEY = 'cartera.v1';
-const defaults = () => ({holdings: [], cash: [], snaps: [], alert: {},
+const defaults = () => ({holdings: [], cash: [], snaps: [], alert: {}, spaces: [],
   settings: {apiKey: '', proxy: 'https://cartera.carlosmerinoclaret.workers.dev', interval: 30, alerts: false, threshold: 2, alertMode: 'daily', lock: false, credId: null, hide: false}});
 let D;
 try { D = Object.assign(defaults(), JSON.parse(localStorage.getItem(KEY) || '{}')); D.settings = Object.assign(defaults().settings, D.settings); }
@@ -487,7 +544,7 @@ function buckets(pts, g, limit) {
 /* ============================================================
    Actualización automática, fotos intradía y avisos
    ============================================================ */
-const ST = {tab: 'home', range: '1M', refreshing: false, error: null, lastOk: null, pts: [], failed: [], scrub: null,
+const ST = {app: 'hub', stab: 'tasks', tab: 'home', range: '1M', refreshing: false, error: null, lastOk: null, pts: [], failed: [], scrub: null,
   statsPts: [], gran: 'month', alloc: 'asset', opsFilter: 'all', detail: null, dRange: '1A', dPts: [], dScrub: null, coolUntil: 0};
 let loopTimer = null;
 async function refresh(manual) {
@@ -496,7 +553,7 @@ async function refresh(manual) {
   const open = D.holdings.filter(h => ledger(h.trades).units > 0);
   const syms = new Set(open.map(h => h.symbol)); open.forEach(h => { const f = fxSym(h.currency); if (f) syms.add(f); });
   if (!syms.size) { ST.error = null; render(); return; }
-  ST.refreshing = true; renderLive();
+  ST.refreshing = true; if (ST.app === 'cartera') renderLive();
   try {
     const fresh = await fetchQuotes([...syms]);
     Object.assign(Q, fresh); saveQ(); ST.lastOk = Date.now();
@@ -508,7 +565,7 @@ async function refresh(manual) {
   }
   ST.refreshing = false;
   const s = summary(); snapshot(s); checkAlerts(s);
-  render();
+  if (ST.app === 'cartera' || ST.app === 'hub') render();
 }
 function scheduleLoop() {
   clearTimeout(loopTimer);
@@ -550,9 +607,9 @@ function checkAlerts(s) {
       `Valor: ${money(s.total)}. Beneficio total: ${sMoney(s.pl)}.`);
   }
 }
-async function loadSeries() { const r = await series(ST.range); ST.pts = r.pts; ST.failed = r.failed; if (ST.tab === 'home') render(); }
-async function loadStats() { const r = await series('Todo'); ST.statsPts = r.pts; if (ST.tab === 'stats') render(); }
-function dataChanged() { save(); loadSeries(); loadStats(); render(); refresh(true); }
+async function loadSeries() { const r = await series(ST.range); ST.pts = r.pts; ST.failed = r.failed; if ((ST.app === 'cartera' && ST.tab === 'home') || ST.app === 'hub') render(); }
+async function loadStats() { const r = await series('Todo'); ST.statsPts = r.pts; if (ST.app === 'cartera' && ST.tab === 'stats') render(); }
+function dataChanged() { save(); loadSeries(); loadStats(); if (ST.app === 'cartera' || ST.app === 'hub') render(); refresh(true); }
 
 /* ============================================================
    Gráficos (SVG dibujado a tamaño real)
@@ -632,6 +689,12 @@ const hide = () => D.settings.hide;
    ============================================================ */
 const main = $('#main');
 function render() {
+  const inCartera = ST.app === 'cartera';
+  $('#tabs').hidden = !inCartera;
+  document.body.classList.toggle('hubmode', ST.app === 'hub');
+  main.style.removeProperty('--sc');
+  if (ST.app === 'hub') { renderHub(); return; }
+  if (!inCartera) { renderSpace(); return; }
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === ST.tab));
   if (ST.tab === 'home') renderHome(); else if (ST.tab === 'stats') renderStats();
   else if (ST.tab === 'ops') renderOps(); else renderSettings();
@@ -663,7 +726,7 @@ function renderHome() {
   const empty = !D.holdings.length && !D.cash.length;
   const closed = s.ps.filter(p => !p.open);
   main.innerHTML = `
-  <div class="topbar"><button class="iconbtn" data-act="hide" aria-label="Ocultar saldo">${eyeIcon(hd)}</button><h1>Mi cartera</h1><button class="iconbtn" data-act="menu" aria-label="Añadir">${plusIcon}</button></div>
+  <div class="topbar"><div style="display:flex">${hubBtn}<button class="iconbtn" data-act="hide" aria-label="Ocultar saldo">${eyeIcon(hd)}</button></div><h1>Mi cartera</h1><span style="display:flex;width:88px;justify-content:flex-end"><button class="iconbtn" data-act="menu" aria-label="Añadir">${plusIcon}</button></span></div>
   <div class="hero">${freshPill(s)}${head}</div>
   <div class="card"><div class="chart" id="chart"></div>
     <div class="ranges">${['1D', '1S', '1M', '3M', '1A', 'Todo'].map(x => `<button data-range="${x}" class="${x === ST.range ? 'on' : ''}">${x}</button>`).join('')}</div>
@@ -720,7 +783,7 @@ function renderStats() {
   if (s.cash > 0) slices.push({label: 'Efectivo', value: s.cash, color: '#8e8e99'});
   slices = slices.filter(x => x.value > 0).sort((a, b) => b.value - a.value);
   const tot = slices.reduce((a, x) => a + x.value, 0);
-  main.innerHTML = `<div class="topbar"><span></span><h1>Estadísticas</h1><span style="width:44px"></span></div>
+  main.innerHTML = `<div class="topbar">${hubBtn}<h1>Estadísticas</h1><span style="width:44px"></span></div>
   <div class="grid2">${items.map(([t, pl, p]) => `<div class="card"><div class="muted" style="font-size:12px">${t}</div>
     <div class="big ${cls(p ?? pl)}">${pct(p)}</div><div class="muted num bal" style="font-size:12px">${pl != null ? esc(sMoney(pl)) : '—'}</div></div>`).join('')}</div>
   <div class="card"><b>Evolución del patrimonio</b><div class="muted" style="font-size:12px;margin-bottom:6px" id="evoSel">Arrastra el dedo sobre el gráfico</div>
@@ -745,7 +808,7 @@ function renderOps() {
   items.sort((a, b) => a.date < b.date ? 1 : -1);
   const groups = new Map();
   for (const it of items) { const k = it.date.slice(0, 7); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(it); }
-  main.innerHTML = `<div class="topbar"><span style="width:44px"></span><h1>Operaciones</h1><button class="iconbtn" data-act="cashmenu" aria-label="Añadir movimiento">${plusIcon}</button></div>
+  main.innerHTML = `<div class="topbar">${hubBtn}<h1>Operaciones</h1><button class="iconbtn" data-act="cashmenu" aria-label="Añadir movimiento">${plusIcon}</button></div>
   <div class="seg">${[['all', 'Todo'], ['buy', 'Compras'], ['sell', 'Ventas'], ['cash', 'Efectivo']].map(([k, l]) => `<button data-ops="${k}" class="${k === f ? 'on' : ''}">${l}</button>`).join('')}</div>
   ${!items.length ? '<div class="card" style="text-align:center"><p class="muted">Aquí verás tus compras, ventas, aportaciones y retiradas.</p></div>' : ''}
   ${[...groups].map(([k, list]) => `<div class="ghead">${esc(parseYmd(k + '-01').toLocaleDateString(LOC, {month: 'long', year: 'numeric'}).replace(/^./, c => c.toUpperCase()))}</div>
@@ -759,7 +822,7 @@ function renderOps() {
 
 function renderSettings() {
   const st = D.settings, standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
-  main.innerHTML = `<div class="topbar"><span></span><h1>Ajustes</h1><span style="width:44px"></span></div>
+  main.innerHTML = `<div class="topbar">${hubBtn}<h1>Ajustes</h1><span style="width:44px"></span></div>
   ${!standalone ? `<div class="banner info"><div><b>Instálala en tu iPhone</b><br><span class="muted">En Safari pulsa Compartir <b>⎙</b> y luego «Añadir a pantalla de inicio». Se abrirá a pantalla completa como una app.</span></div></div>` : ''}
   <div class="ghead">Datos de mercado · EODHD</div>
   <div class="form"><div class="field"><label for="proxy">Servidor (Worker)</label><input id="proxy" type="url" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(st.proxy)}" placeholder="${esc(DEFAULT_PROXY)}"></div>
@@ -785,6 +848,146 @@ function renderSettings() {
   <div class="btns"><button class="btn sec2" data-act="export">Copia de seguridad</button><button class="btn sec2" data-act="import">Restaurar</button></div>
   <div class="btns"><button class="btn danger" data-act="wipe">Borrar todos mis datos</button></div>
   <div class="hint">Tus datos se guardan solo en este iPhone. Haz una copia de seguridad de vez en cuando: si borras los datos de Safari o la app, se pierden. Los precios se muestran solo con fines informativos y no son asesoramiento financiero.</div>`;
+}
+
+/* ---------- Inicio y espacios ---------- */
+const gridIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="2.5"/><rect x="13" y="3" width="8" height="8" rx="2.5"/><rect x="3" y="13" width="8" height="8" rx="2.5"/><rect x="13" y="13" width="8" height="8" rx="2.5"/></svg>';
+const dotsIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>';
+const hubBtn = `<button class="iconbtn" data-act="hub" aria-label="Inicio">${gridIcon}</button>`;
+const SPACE_COLORS = ['#5b66fa', '#12a862', '#f08c1a', '#e5303b', '#c847c8', '#1f9fd6', '#7d6cf0', '#3a3f55'];
+const EMOJIS = ['📚', '🎓', '⚡', '🔧', '🧮', '🧪', '🖥️', '📝', '⚽', '🏃', '💪', '🥗', '🚀', '💡', '🎯', '🗂️', '💼', '📈', '🏠', '✈️', '🎵', '🎨', '❤️', '⭐'];
+const TEMPLATES = [
+  {k: 'study', e: '📚', c: '#5b66fa', name: 'Estudios', d: 'Exámenes, entregas y apuntes', hint: 'Ej.: Entregar práctica de Electrónica'},
+  {k: 'project', e: '🚀', c: '#f08c1a', name: 'Proyecto', d: 'Tareas, notas y enlaces', hint: 'Ej.: Preparar la primera versión'},
+  {k: 'sport', e: '⚽', c: '#12a862', name: 'Deporte', d: 'Entrenos, partidos y objetivos', hint: 'Ej.: Entreno de fuerza'},
+  {k: 'ideas', e: '💡', c: '#c847c8', name: 'Ideas', d: 'Apunta lo que se te ocurra', hint: 'Ej.: Idea para el fin de semana'},
+  {k: 'personal', e: '🏠', c: '#1f9fd6', name: 'Personal', d: 'Recados y cosas de casa', hint: 'Ej.: Pedir cita en el banco'},
+  {k: 'blank', e: '⭐', c: '#7d6cf0', name: '', d: 'Empieza desde cero', hint: 'Añade una tarea'},
+];
+const grad = c => `linear-gradient(145deg,${c},color-mix(in srgb,${c} 62%,#000))`;
+const safeColor = c => /^#[0-9a-f]{6}$/i.test(c || '') ? c : '#5b66fa';
+function greeting() { const h = new Date().getHours(); return h < 6 ? 'Buenas noches' : h < 14 ? 'Buenos días' : h < 21 ? 'Buenas tardes' : 'Buenas noches'; }
+function dueChip(due) {
+  if (!due) return '';
+  const t = today(), tm = addDays(t, 1), soon = addDays(t, 3);
+  const label = due < t ? 'Vencida · ' + parseYmd(due).toLocaleDateString(LOC, {day: 'numeric', month: 'short'})
+    : due === t ? 'Hoy' : due === tm ? 'Mañana' : parseYmd(due).toLocaleDateString(LOC, {weekday: 'short', day: 'numeric', month: 'short'});
+  return `<span class="due ${due < t ? 'late' : due <= soon ? 'soon' : ''}">${esc(label)}</span>`;
+}
+function spark(pts) {
+  if (pts.length < 2) return '';
+  const vs = pts.map(p => p.v), lo = Math.min(...vs), hi = Math.max(...vs), t0 = pts[0].t, dt = Math.max(1, pts[pts.length - 1].t - t0);
+  const d = pts.map((p, i) => `${i ? 'L' : 'M'}${((p.t - t0) / dt * 200).toFixed(1)},${(90 - (hi > lo ? (p.v - lo) / (hi - lo) : .5) * 80).toFixed(1)}`).join('');
+  return `<svg viewBox="0 0 200 100" preserveAspectRatio="none" aria-hidden="true"><path d="${d}" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`;
+}
+const pendingCount = sp => sp.tasks.filter(t => !t.done).length;
+function appIcon(id, name, icon, bg, badge) {
+  return `<button class="app" data-app="${esc(id)}"><span class="sq" style="background:${bg}">${esc(icon)}</span>${badge ? `<span class="badge">${badge > 99 ? '99+' : badge}</span>` : ''}<span class="nm">${esc(name)}</span></button>`;
+}
+function renderHub() {
+  const s = summary(), hd = hide();
+  const upcoming = D.spaces.flatMap(sp => sp.tasks.filter(t => !t.done && t.due).map(t => ({sp, t})))
+    .sort((a, b) => a.t.due < b.t.due ? -1 : a.t.due > b.t.due ? 1 : 0).slice(0, 6);
+  main.innerHTML = `
+  <div class="hubhead"><div class="date">${esc(new Date().toLocaleDateString(LOC, {weekday: 'long', day: 'numeric', month: 'long'}).replace(/^./, c => c.toUpperCase()))}</div><h1>${greeting()}</h1></div>
+  <button class="widget" data-app="cartera" aria-label="Abrir mi cartera">${spark(withLive(ST.pts))}<div class="wl">Mi cartera</div>
+    <div class="wv">${hd ? '••••• €' : esc(money(s.total))}</div><span class="wc">Hoy ${esc(pct(s.dayPct))}${hd ? '' : ' · ' + esc(sMoney(s.day))}</span></button>
+  <div class="apps">
+    ${appIcon('cartera', 'Cartera', '📈', grad('#5b66fa'), 0)}
+    ${D.spaces.map(sp => appIcon(sp.id, sp.name, sp.icon, grad(safeColor(sp.color)), pendingCount(sp))).join('')}
+    <button class="app add" data-act="newspace"><span class="sq">＋</span><span class="nm">Nuevo</span></button>
+  </div>
+  ${upcoming.length ? `<div class="sec"><h2>Próximo</h2></div><div class="card list">${upcoming.map(({sp, t}) => `<button class="task" data-app="${esc(sp.id)}">
+      <span class="mini" style="background:${grad(safeColor(sp.color))}">${esc(sp.icon)}</span><div class="grow"><div class="t1">${esc(t.text)}</div><div class="t2">${esc(sp.name)}</div></div>${dueChip(t.due)}</button>`).join('')}</div>` : ''}
+  ${!D.spaces.length ? `<div class="card" style="text-align:center;padding:22px"><b>Crea tus espacios</b><p class="muted" style="font-size:14px;margin:6px 0 14px">Uno para tus estudios, otro para cada proyecto, el deporte… Cada espacio tiene tareas, notas y enlaces.</p><button class="btn pri" data-act="newspace">Crear un espacio</button></div>` : ''}`;
+}
+function taskRow(t) {
+  return `<div class="task ${t.done ? 'done' : ''}"><button class="chk ${t.done ? 'on' : ''}" data-task="${esc(t.id)}" aria-label="${t.done ? 'Marcar como pendiente' : 'Marcar como hecha'}">${t.done ? '✓' : ''}</button>
+    <div class="grow tt">${esc(t.text)}</div>${t.done ? '' : dueChip(t.due)}<button class="x" data-deltask="${esc(t.id)}" aria-label="Eliminar tarea">×</button></div>`;
+}
+function curSpace() { return D.spaces.find(x => x.id === ST.app); }
+function renderSpace() {
+  const sp = curSpace(); if (!sp) { ST.app = 'hub'; render(); return; }
+  const tab = ST.stab, open = sp.tasks.filter(t => !t.done), done = sp.tasks.filter(t => t.done), total = sp.tasks.length;
+  const tpl = TEMPLATES.find(x => x.k === sp.tpl) || TEMPLATES[5];
+  main.style.setProperty('--sc', safeColor(sp.color));
+  const sorted = open.slice().sort((a, b) => (a.due || '9999') < (b.due || '9999') ? -1 : (a.due || '9999') > (b.due || '9999') ? 1 : 0);
+  let body;
+  if (tab === 'tasks') body = `<form class="addrow" data-form="task"><input class="txt" id="tnew" placeholder="${esc(tpl.hint)}" autocomplete="off" enterkeyhint="done" maxlength="200"><input type="date" id="tdue" aria-label="Fecha límite (opcional)"><button aria-label="Añadir tarea">＋</button></form>
+    ${sorted.length ? `<div class="card list">${sorted.map(taskRow).join('')}</div>` : `<p class="muted" style="text-align:center;margin:26px 0">${total ? 'Todo hecho. ¡Bien!' : 'Escribe arriba tu primera tarea. La fecha es opcional.'}</p>`}
+    ${done.length ? `<details class="card"><summary>Hechas (${done.length})</summary><div style="padding-top:4px">${done.slice().reverse().map(taskRow).join('')}</div></details>` : ''}`;
+  else if (tab === 'notes') body = `<button class="btn sec2" data-act="newnote" style="margin-bottom:14px">＋ Nueva nota</button>
+    ${sp.notes.slice().sort((a, b) => b.updated - a.updated).map(n => `<button class="note" data-note="${esc(n.id)}"><b>${esc(n.title || 'Sin título')}</b><p>${esc(n.body || '')}</p><span class="t2">${esc(new Date(n.updated).toLocaleString(LOC, {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'}))}</span></button>`).join('')
+      || '<p class="muted" style="text-align:center;margin:26px 0">Sin notas todavía.</p>'}`;
+  else body = `<form class="addrow" data-form="link"><input class="txt" id="lurl" placeholder="Pega un enlace (https://…)" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false"><button aria-label="Añadir enlace">＋</button></form>
+    ${sp.links.length ? `<div class="card list">${sp.links.map(l => `<div class="row"><a class="grow" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none"><div class="t1">${esc(l.title)}</div><div class="t2">${esc(l.url)}</div></a><button class="x" data-dellink="${esc(l.id)}" aria-label="Eliminar enlace">×</button></div>`).join('')}</div>`
+      : '<p class="muted" style="text-align:center;margin:26px 0">Guarda aquí webs, apuntes en la nube, vídeos…</p>'}`;
+  main.innerHTML = `<div class="topbar">${hubBtn}<h1>${esc(sp.name)}</h1><button class="iconbtn" data-act="editspace" aria-label="Editar espacio">${dotsIcon}</button></div>
+  <div class="spacehero"><span class="sq" style="background:${grad(safeColor(sp.color))}">${esc(sp.icon)}</span><div class="grow">
+    <div style="font-size:24px;font-weight:700;line-height:1.15">${esc(sp.name)}</div>
+    <div class="muted" style="font-size:13px">${total ? `${done.length} de ${total} tareas hechas` : 'Sin tareas todavía'}</div>
+    <div class="prog"><i style="width:${total ? Math.round(done.length / total * 100) : 0}%"></i></div></div></div>
+  <div class="seg">${[['tasks', 'Tareas', open.length], ['notes', 'Notas', sp.notes.length], ['links', 'Enlaces', sp.links.length]].map(([k, l, n]) => `<button data-stab="${k}" class="${k === tab ? 'on' : ''}">${l}${n ? ' · ' + n : ''}</button>`).join('')}</div>
+  ${body}`;
+}
+function openApp(id) {
+  closeDetail(); hideMenu();
+  if (id === 'cartera') { ST.app = 'cartera'; ST.tab = 'home'; }
+  else { ST.app = id; ST.stab = 'tasks'; }
+  window.scrollTo(0, 0); haptic(); render();
+}
+function openSpaceEditor(sp) {
+  const isNew = !sp;
+  let tplK = sp?.tpl || 'study', name = sp?.name || '', icon = sp?.icon || '📚', color = safeColor(sp?.color || '#5b66fa'), nameTouched = !!sp;
+  const draw = () => {
+    $('#sbody').innerHTML = `${isNew ? `<div class="tpls">${TEMPLATES.map(t => `<button class="tpl ${t.k === tplK ? 'on' : ''}" data-tpl="${t.k}"><span class="e">${t.e}</span><b>${esc(t.name || 'En blanco')}</b><span>${esc(t.d)}</span></button>`).join('')}</div>` : ''}
+      <div class="ghead">Nombre</div><div class="form"><div class="field"><input id="spname" style="text-align:left" placeholder="Ej.: Carrera, TFG, Fútbol…" maxlength="40" value="${esc(name)}"></div></div>
+      <div class="ghead">Icono</div><div class="form emojis">${EMOJIS.map(e => `<button data-emoji="${e}" class="${e === icon ? 'on' : ''}">${e}</button>`).join('')}</div>
+      <div class="ghead">Color</div><div class="form swatches">${SPACE_COLORS.map(c => `<button data-color="${c}" class="${c === color ? 'on' : ''}" style="background:${c}" aria-label="Color ${c}"></button>`).join('')}</div>
+      <div class="card" style="display:flex;align-items:center;gap:14px;margin-top:10px"><span class="mini" style="width:52px;height:52px;border-radius:15px;font-size:26px;background:${grad(color)}">${esc(icon)}</span><div><b>${esc(name || 'Tu espacio')}</b><div class="t2">Así se verá en tu inicio</div></div></div>
+      ${isNew ? '' : '<button class="btn danger" data-act="delspace" style="margin-top:8px">Eliminar espacio</button>'}`;
+    const inp = $('#spname');
+    inp.oninput = () => { name = inp.value; nameTouched = true; setSaveEnabled(name.trim().length > 0); };
+    setSaveEnabled(name.trim().length > 0);
+  };
+  openSheet(isNew ? 'Nuevo espacio' : 'Editar espacio', '', () => {
+    const n = ($('#spname')?.value || name).trim(); if (!n) return;
+    if (isNew) {
+      const ns = {id: uid(), name: n, icon, color, tpl: tplK, tasks: [], notes: [], links: [], created: Date.now()};
+      D.spaces.push(ns); save(); closeSheet(); openApp(ns.id); toast('Espacio creado');
+    } else {
+      Object.assign(sp, {name: n, icon, color}); save(); closeSheet(); render();
+    }
+  }, isNew ? 'Crear' : 'Guardar');
+  draw();
+  $('#sbody').addEventListener('click', e => {
+    const tb = e.target.closest('[data-tpl]'), eb = e.target.closest('[data-emoji]'), cb = e.target.closest('[data-color]');
+    if (tb) { const t = TEMPLATES.find(x => x.k === tb.dataset.tpl); tplK = t.k; icon = t.e; color = t.c; if (!nameTouched) name = t.name; draw(); }
+    else if (eb) { name = $('#spname').value; icon = eb.dataset.emoji; draw(); }
+    else if (cb) { name = $('#spname').value; color = cb.dataset.color; draw(); }
+    else if (e.target.closest('[data-act=delspace]')) {
+      const left = sp.tasks.length + sp.notes.length + sp.links.length;
+      confirmBox(`¿Eliminar «${sp.name}»${left ? ` y sus ${left} elementos` : ''}?`, 'Eliminar', () => {
+        D.spaces = D.spaces.filter(x => x.id !== sp.id); save(); closeSheet(); ST.app = 'hub'; render(); toast('Espacio eliminado');
+      });
+    }
+  });
+}
+function openNote(sp, note) {
+  openSheet(note ? 'Nota' : 'Nueva nota', `<input class="titlein" id="ntitle" placeholder="Título" maxlength="120" value="${esc(note?.title || '')}">
+    <textarea class="editor" id="nbody" placeholder="Escribe aquí…">${esc(note?.body || '')}</textarea>
+    ${note ? '<button class="btn danger" data-act="delnote" style="margin-top:12px">Eliminar nota</button>' : ''}`, () => {
+    const title = $('#ntitle').value.trim(), body = $('#nbody').value;
+    if (!title && !body.trim()) { closeSheet(); return; }
+    const n = note || {id: uid()};
+    Object.assign(n, {title, body, updated: Date.now()});
+    if (!note) sp.notes.push(n);
+    save(); closeSheet(); render();
+  });
+  $('#sbody').addEventListener('click', e => {
+    if (e.target.closest('[data-act=delnote]')) confirmBox('¿Eliminar esta nota?', 'Eliminar', () => { sp.notes = sp.notes.filter(x => x.id !== note.id); save(); closeSheet(); render(); });
+  });
+  if (!note) setTimeout(() => $('#ntitle')?.focus(), 350);
 }
 
 /* ---------- Ficha de un activo ---------- */
@@ -1117,6 +1320,15 @@ async function unlock() {
 document.addEventListener('click', async e => {
   const t = e.target;
   if (!$('#menu').hidden && !t.closest('#menu') && !t.closest('[data-act=menu],[data-act=cashmenu],[data-act=dmenu]')) hideMenu();
+  const ap = t.closest('[data-app]'); if (ap) { openApp(ap.dataset.app); return; }
+  const stb = t.closest('[data-stab]'); if (stb) { ST.stab = stb.dataset.stab; render(); haptic(); return; }
+  const tk = t.closest('[data-task]');
+  if (tk) { const sp = curSpace(), x = sp?.tasks.find(y => y.id === tk.dataset.task); if (x) { x.done = !x.done; x.doneAt = x.done ? Date.now() : null; save(); haptic(); render(); } return; }
+  const dtk = t.closest('[data-deltask]');
+  if (dtk) { const sp = curSpace(); if (sp) { sp.tasks = sp.tasks.filter(y => y.id !== dtk.dataset.deltask); save(); render(); } return; }
+  const nt = t.closest('[data-note]'); if (nt && !t.closest('#sheet')) { const sp = curSpace(), n = sp?.notes.find(y => y.id === nt.dataset.note); if (n) openNote(sp, n); return; }
+  const dl = t.closest('[data-dellink]');
+  if (dl) { const sp = curSpace(); if (sp) { sp.links = sp.links.filter(y => y.id !== dl.dataset.dellink); save(); render(); } return; }
   const tab = t.closest('[data-tab]');
   if (tab) { ST.tab = tab.dataset.tab; ST.scrub = null; closeDetail(); window.scrollTo(0, 0); render(); if (ST.tab === 'stats') loadStats(); return; }
   const rg = t.closest('[data-range]'); if (rg) { ST.range = rg.dataset.range; ST.scrub = null; render(); loadSeries(); haptic(); return; }
@@ -1152,20 +1364,24 @@ document.addEventListener('click', async e => {
       } catch (err) { res.innerHTML = `<span class="loss">✗ ${esc(err.message)}</span>`; }
       break; }
     case 'export': {
-      const txt = JSON.stringify({holdings: D.holdings, cash: D.cash});
+      const txt = JSON.stringify({holdings: D.holdings, cash: D.cash, spaces: D.spaces});
       try { await navigator.clipboard.writeText(txt); toast('Copia guardada en el portapapeles: pégala en Notas'); }
       catch { openSheet('Copia de seguridad', `<p class="muted">Copia este texto y guárdalo en Notas:</p><textarea style="width:100%;height:220px;border-radius:12px;padding:10px;border:1px solid var(--line);background:var(--card);font:12px ui-monospace,monospace" readonly>${esc(txt)}</textarea>`, null); }
       break; }
     case 'import':
       openSheet('Restaurar copia', `<p class="muted">Pega aquí el texto de tu copia de seguridad. Sustituirá los datos actuales.</p><textarea id="imp" style="width:100%;height:220px;border-radius:12px;padding:10px;border:1px solid var(--line);background:var(--card);font:12px ui-monospace,monospace"></textarea>`, () => {
         try { const o = JSON.parse($('#imp').value); if (!Array.isArray(o.holdings) || !Array.isArray(o.cash)) throw 0;
-          D.holdings = o.holdings; D.cash = o.cash; closeSheet(); dataChanged(); toast('Datos restaurados'); }
+          D.holdings = o.holdings; D.cash = o.cash; if (Array.isArray(o.spaces)) D.spaces = o.spaces; closeSheet(); dataChanged(); toast('Datos restaurados'); }
         catch { toast('El texto no es una copia válida'); }
       }, 'Restaurar');
       break;
     case 'wipe': confirmBox('Se borrarán todas tus inversiones y movimientos de este iPhone.', 'Borrar todo', () => {
       D.holdings = []; D.cash = []; D.snaps = []; D.alert = {}; Q = {}; saveQ(); dataChanged(); toast('Datos borrados'); }); break;
     case 'unlock': unlock(); break;
+    case 'hub': closeDetail(); ST.app = 'hub'; window.scrollTo(0, 0); render(); loadSeries(); break;
+    case 'newspace': openSpaceEditor(null); break;
+    case 'editspace': { const sp = curSpace(); if (sp) openSpaceEditor(sp); break; }
+    case 'newnote': { const sp = curSpace(); if (sp) openNote(sp, null); break; }
     case 'refresh': haptic(); await refresh(true); toast(ST.error ? ST.error : 'Precios actualizados'); break;
   }
 });
@@ -1194,6 +1410,24 @@ document.addEventListener('change', async e => {
   }
 });
 $('#scrim').addEventListener('click', closeSheet);
+document.addEventListener('submit', e => {
+  const f = e.target.closest('[data-form]'); if (!f) return;
+  e.preventDefault();
+  const sp = curSpace(); if (!sp) return;
+  if (f.dataset.form === 'task') {
+    const text = $('#tnew').value.trim(); if (!text) return;
+    sp.tasks.push({id: uid(), text, due: $('#tdue').value || '', done: false, created: Date.now()});
+    save(); haptic(); render(); setTimeout(() => $('#tnew')?.focus(), 0);
+  }
+  if (f.dataset.form === 'link') {
+    let url = $('#lurl').value.trim(); if (!url) return;
+    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+    let u; try { u = new URL(url); } catch { toast('Ese enlace no es válido'); return; }
+    if (!/^https?:$/.test(u.protocol)) { toast('Solo enlaces web (https)'); return; }
+    sp.links.push({id: uid(), url: u.href, title: u.hostname.replace(/^www\./, '')});
+    save(); render();
+  }
+});
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { hiddenAt = Date.now(); clearTimeout(loopTimer); document.body.classList.add('blur'); }
   else {
@@ -1203,7 +1437,7 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 let resizeT; addEventListener('pageshow', e => { if (e.persisted) refresh(true).then(scheduleLoop); });
-addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(render, 150); });
+addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (ST.app === 'cartera') render(); }, 150); });
 
 /* ============================================================
    Arranque
