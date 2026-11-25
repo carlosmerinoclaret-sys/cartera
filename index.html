@@ -640,7 +640,9 @@ function render() {
 function renderLive() { const p = $('#fresh'); if (p) p.outerHTML = freshPill(summary()); }
 function freshPill(s) {
   const f = s.fresh;
-  return `<span class="pill" id="fresh">${ST.refreshing ? '<span class="spin"></span>' : `<span class="dot ${f ? f.k : ''}"></span>`}${esc(f ? f.label : 'Sin datos')}${(s.lastF || ST.lastOk) ? `<span class="muted">· ${esc(timeFmt(s.lastF || ST.lastOk))}</span>` : ''}</span>`;
+  const qt = Math.max(0, ...s.open.filter(p => p.fresh?.k === 'cl').map(p => p.q?.t || 0));
+  const when = f?.k === 'cl' && qt ? `precio de ${timeFmt(qt)}` : ((s.lastF || ST.lastOk) ? timeFmt(s.lastF || ST.lastOk) : '');
+  return `<button class="pill" id="fresh" data-act="refresh" aria-label="Actualizar precios">${ST.refreshing ? '<span class="spin"></span>' : `<span class="dot ${f ? f.k : ''}"></span>`}${esc(f ? f.label : 'Sin datos')}${when ? `<span class="muted">· ${esc(when)}</span>` : ''}<span class="muted" aria-hidden="true">↻</span></button>`;
 }
 const plusIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
 const eyeIcon = h => h ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l18 18M10.6 6.1A10 10 0 0 1 12 6c6 0 10 6 10 6a17 17 0 0 1-3 3.6M6.6 6.6C3.9 8.4 2 12 2 12s4 6 10 6a9.6 9.6 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>'
@@ -1164,6 +1166,7 @@ document.addEventListener('click', async e => {
     case 'wipe': confirmBox('Se borrarán todas tus inversiones y movimientos de este iPhone.', 'Borrar todo', () => {
       D.holdings = []; D.cash = []; D.snaps = []; D.alert = {}; Q = {}; saveQ(); dataChanged(); toast('Datos borrados'); }); break;
     case 'unlock': unlock(); break;
+    case 'refresh': haptic(); await refresh(true); toast(ST.error ? ST.error : 'Precios actualizados'); break;
   }
 });
 document.addEventListener('change', async e => {
@@ -1199,7 +1202,8 @@ document.addEventListener('visibilitychange', () => {
     refresh().then(scheduleLoop);
   }
 });
-let resizeT; addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(render, 150); });
+let resizeT; addEventListener('pageshow', e => { if (e.persisted) refresh(true).then(scheduleLoop); });
+addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(render, 150); });
 
 /* ============================================================
    Arranque
