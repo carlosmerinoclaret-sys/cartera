@@ -194,6 +194,23 @@ body.hubmode{background:radial-gradient(130% 60% at 0% 0%,color-mix(in srgb,var(
 .tpl span{font-size:12px;color:var(--muted)}
 .editor{width:100%;min-height:45dvh;border:0;border-radius:14px;background:var(--card);padding:14px;font:16px/1.5 -apple-system,sans-serif;color:var(--ink);resize:vertical;outline:none}
 .titlein{width:100%;border:0;background:none;font-size:22px;font-weight:700;padding:6px 2px 12px;outline:none;color:var(--ink)}
+.exams{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 6px;margin:0 -2px 6px;scroll-snap-type:x mandatory}
+.exam{flex:none;width:168px;scroll-snap-align:start;border-radius:20px;padding:14px;color:#fff;text-align:left}
+.exam .n{font:800 30px/1 -apple-system,"SF Pro Rounded",ui-rounded,sans-serif}
+.exam .l{font-size:12px;opacity:.9;margin-top:2px}
+.exam .s{font-size:13px;font-weight:600;margin-top:8px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.today .it{display:flex;align-items:center;gap:12px;padding:9px 0}
+.today .it+.it{border-top:1px solid var(--line)}
+.today .tm{flex:none;width:48px;font-weight:700;font-variant-numeric:tabular-nums;font-size:14px}
+.examtag{flex:none;font-size:11px;font-weight:700;padding:2px 7px;border-radius:99px;background:color-mix(in srgb,var(--sc,var(--accent)) 16%,transparent);color:var(--sc,var(--accent))}
+.examtg{background:var(--card2)!important;color:var(--muted)!important;font-size:16px!important}
+.examtg.on{background:var(--loss)!important;color:#fff!important}
+.days{display:flex;gap:6px;flex-wrap:wrap;padding:10px 16px}
+.days button{width:38px;height:38px;border-radius:50%;background:var(--card2);font-weight:700;font-size:13px;color:var(--muted)}
+.days button.on{background:var(--sc,var(--accent));color:#fff}
+.rt{display:flex;align-items:center;gap:10px;padding:9px 0}
+.rt+.rt{border-top:1px solid var(--line)}
+.rt .dd{font-size:12px;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -846,6 +863,7 @@ function renderSettings() {
   <div class="hint">Las notificaciones funcionan con la app añadida a la pantalla de inicio (iOS 16.4 o posterior) y saltan mientras la app está abierta o recién usada.</div>
   <div class="ghead">Datos</div>
   <div class="btns"><button class="btn sec2" data-act="export">Copia de seguridad</button><button class="btn sec2" data-act="import">Restaurar</button></div>
+  <div class="btns"><button class="btn sec2" data-act="import" data-kind="spaces">Importar espacios</button></div>
   <div class="btns"><button class="btn danger" data-act="wipe">Borrar todos mis datos</button></div>
   <div class="hint">Tus datos se guardan solo en este iPhone. Haz una copia de seguridad de vez en cuando: si borras los datos de Safari o la app, se pierden. Los precios se muestran solo con fines informativos y no son asesoramiento financiero.</div>`;
 }
@@ -855,7 +873,7 @@ const gridIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3"
 const dotsIcon = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>';
 const hubBtn = `<button class="iconbtn" data-act="hub" aria-label="Inicio">${gridIcon}</button>`;
 const SPACE_COLORS = ['#5b66fa', '#12a862', '#f08c1a', '#e5303b', '#c847c8', '#1f9fd6', '#7d6cf0', '#3a3f55'];
-const EMOJIS = ['📚', '🎓', '⚡', '🔧', '🧮', '🧪', '🖥️', '📝', '⚽', '🏃', '💪', '🥗', '🚀', '💡', '🎯', '🗂️', '💼', '📈', '🏠', '✈️', '🎵', '🎨', '❤️', '⭐'];
+const EMOJIS = ['📚', '🎓', '⚡', '🔬', '🧮', '🧪', '🖥️', '📝', '🔧', '🗓️', '💰', '🚗', '🏋️', '⚽', '🏃', '💪', '🥗', '🚀', '💡', '🎯', '🗂️', '💼', '📈', '🏠', '✈️', '🎵', '🎨', '❤️', '⭐'];
 const TEMPLATES = [
   {k: 'study', e: '📚', c: '#5b66fa', name: 'Estudios', d: 'Exámenes, entregas y apuntes', hint: 'Ej.: Entregar práctica de Electrónica'},
   {k: 'project', e: '🚀', c: '#f08c1a', name: 'Proyecto', d: 'Tareas, notas y enlaces', hint: 'Ej.: Preparar la primera versión'},
@@ -880,13 +898,29 @@ function spark(pts) {
   const d = pts.map((p, i) => `${i ? 'L' : 'M'}${((p.t - t0) / dt * 200).toFixed(1)},${(90 - (hi > lo ? (p.v - lo) / (hi - lo) : .5) * 80).toFixed(1)}`).join('');
   return `<svg viewBox="0 0 200 100" preserveAspectRatio="none" aria-hidden="true"><path d="${d}" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`;
 }
-const pendingCount = sp => sp.tasks.filter(t => !t.done).length;
+const pendingCount = sp => { const lim = addDays(today(), 7); return sp.tasks.filter(t => !t.done && t.due && t.due <= lim).length; };
+const DAYN = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+const DAYORDER = [1, 2, 3, 4, 5, 6, 0];
+const daysLabel = ds => ds.length === 7 ? 'Todos los días' : ds.join() === '1,2,3,4,5' ? 'De lunes a viernes' : DAYORDER.filter(d => ds.includes(d)).map(d => DAYN[d]).join(' · ');
+const daysUntil = ymdStr => Math.round((parseYmd(ymdStr) - parseYmd(today())) / 86400000);
+function todayItems() {
+  const wd = new Date().getDay(), t = today(), out = [];
+  for (const sp of D.spaces) {
+    for (const r of sp.routine || []) if ((r.days || []).includes(wd)) out.push({sp, time: r.time || '', text: r.text});
+    for (const k of sp.tasks) if (!k.done && k.due === t) out.push({sp, time: '', text: k.text, task: true, exam: k.exam});
+  }
+  return out.sort((a, b) => (a.time || '99') < (b.time || '99') ? -1 : (a.time || '99') > (b.time || '99') ? 1 : 0);
+}
+function upcomingExams() {
+  const t = today();
+  return D.spaces.flatMap(sp => sp.tasks.filter(k => k.exam && !k.done && k.due && k.due >= t).map(k => ({sp, k}))).sort((a, b) => a.k.due < b.k.due ? -1 : 1);
+}
 function appIcon(id, name, icon, bg, badge) {
   return `<button class="app" data-app="${esc(id)}"><span class="sq" style="background:${bg}">${esc(icon)}</span>${badge ? `<span class="badge">${badge > 99 ? '99+' : badge}</span>` : ''}<span class="nm">${esc(name)}</span></button>`;
 }
 function renderHub() {
   const s = summary(), hd = hide();
-  const upcoming = D.spaces.flatMap(sp => sp.tasks.filter(t => !t.done && t.due).map(t => ({sp, t})))
+  const upcoming = D.spaces.flatMap(sp => sp.tasks.filter(t => !t.done && t.due && !t.exam && t.due !== today()).map(t => ({sp, t})))
     .sort((a, b) => a.t.due < b.t.due ? -1 : a.t.due > b.t.due ? 1 : 0).slice(0, 6);
   main.innerHTML = `
   <div class="hubhead"><div class="date">${esc(new Date().toLocaleDateString(LOC, {weekday: 'long', day: 'numeric', month: 'long'}).replace(/^./, c => c.toUpperCase()))}</div><h1>${greeting()}</h1></div>
@@ -896,14 +930,24 @@ function renderHub() {
     ${appIcon('cartera', 'Cartera', '📈', grad('#5b66fa'), 0)}
     ${D.spaces.map(sp => appIcon(sp.id, sp.name, sp.icon, grad(safeColor(sp.color)), pendingCount(sp))).join('')}
     <button class="app add" data-act="newspace"><span class="sq">＋</span><span class="nm">Nuevo</span></button>
+    <button class="app add" data-act="import" data-kind="spaces"><span class="sq" style="font-size:24px">⇩</span><span class="nm">Importar</span></button>
   </div>
+  ${(() => {
+    const ex = upcomingExams();
+    return ex.length ? `<div class="sec"><h2>Exámenes</h2></div><div class="exams">${ex.map(({sp, k}) => { const n = daysUntil(k.due);
+      return `<button class="exam" data-app="${esc(sp.id)}" style="background:${grad(safeColor(sp.color))}"><div class="n">${n === 0 ? 'HOY' : n}</div><div class="l">${n === 0 ? '¡Mucha suerte!' : n === 1 ? 'día · mañana' : 'días · ' + esc(parseYmd(k.due).toLocaleDateString(LOC, {day: 'numeric', month: 'short'}))}</div><div class="s">${esc(sp.icon)} ${esc(k.text.replace(/^Examen:?\s*/i, ''))}</div></button>`; }).join('')}</div>` : '';
+  })()}
+  ${(() => {
+    const it = todayItems(); if (!D.spaces.length) return '';
+    return `<div class="sec"><h2>Hoy</h2><span class="muted" style="font-size:14px">${esc(new Date().toLocaleDateString(LOC, {weekday: 'long'}))}</span></div><div class="card today">${it.length ? it.map(x => `<button class="it" style="width:100%;text-align:left" data-app="${esc(x.sp.id)}"><span class="tm">${esc(x.time || (x.task ? '·' : ''))}</span><span class="mini" style="width:28px;height:28px;font-size:15px;border-radius:8px;background:${grad(safeColor(x.sp.color))}">${esc(x.sp.icon)}</span><span class="grow">${esc(x.text)}</span>${x.exam ? '<span class="due late">Examen</span>' : ''}</button>`).join('') : '<p class="muted" style="margin:4px 0">Nada programado para hoy.</p>'}</div>`;
+  })()}
   ${upcoming.length ? `<div class="sec"><h2>Próximo</h2></div><div class="card list">${upcoming.map(({sp, t}) => `<button class="task" data-app="${esc(sp.id)}">
       <span class="mini" style="background:${grad(safeColor(sp.color))}">${esc(sp.icon)}</span><div class="grow"><div class="t1">${esc(t.text)}</div><div class="t2">${esc(sp.name)}</div></div>${dueChip(t.due)}</button>`).join('')}</div>` : ''}
   ${!D.spaces.length ? `<div class="card" style="text-align:center;padding:22px"><b>Crea tus espacios</b><p class="muted" style="font-size:14px;margin:6px 0 14px">Uno para tus estudios, otro para cada proyecto, el deporte… Cada espacio tiene tareas, notas y enlaces.</p><button class="btn pri" data-act="newspace">Crear un espacio</button></div>` : ''}`;
 }
 function taskRow(t) {
   return `<div class="task ${t.done ? 'done' : ''}"><button class="chk ${t.done ? 'on' : ''}" data-task="${esc(t.id)}" aria-label="${t.done ? 'Marcar como pendiente' : 'Marcar como hecha'}">${t.done ? '✓' : ''}</button>
-    <div class="grow tt">${esc(t.text)}</div>${t.done ? '' : dueChip(t.due)}<button class="x" data-deltask="${esc(t.id)}" aria-label="Eliminar tarea">×</button></div>`;
+    <div class="grow tt">${esc(t.text)}</div>${t.exam ? '<span class="examtag">Examen</span>' : ''}${t.done ? '' : dueChip(t.due)}<button class="x" data-deltask="${esc(t.id)}" aria-label="Eliminar tarea">×</button></div>`;
 }
 function curSpace() { return D.spaces.find(x => x.id === ST.app); }
 function renderSpace() {
@@ -913,8 +957,11 @@ function renderSpace() {
   main.style.setProperty('--sc', safeColor(sp.color));
   const sorted = open.slice().sort((a, b) => (a.due || '9999') < (b.due || '9999') ? -1 : (a.due || '9999') > (b.due || '9999') ? 1 : 0);
   let body;
-  if (tab === 'tasks') body = `<form class="addrow" data-form="task"><input class="txt" id="tnew" placeholder="${esc(tpl.hint)}" autocomplete="off" enterkeyhint="done" maxlength="200"><input type="date" id="tdue" aria-label="Fecha límite (opcional)"><button aria-label="Añadir tarea">＋</button></form>
+  const routine = (sp.routine || []).slice().sort((a, b) => (a.time || '99') < (b.time || '99') ? -1 : 1);
+  if (tab === 'tasks') body = `<form class="addrow" data-form="task"><input class="txt" id="tnew" placeholder="${esc(tpl.hint)}" autocomplete="off" enterkeyhint="done" maxlength="200"><input type="date" id="tdue" aria-label="Fecha límite (opcional)"><button type="button" class="examtg ${ST.newExam ? 'on' : ''}" data-act="examtoggle" aria-label="Marcar como examen" aria-pressed="${ST.newExam ? 'true' : 'false'}">📝</button><button aria-label="Añadir tarea">＋</button></form>
+    ${routine.length ? `<details class="card" ${ST.rtOpen ? 'open' : ''} data-rt><summary>Rutina semanal (${routine.length})</summary>${routine.map(r => `<div class="rt"><b class="num" style="width:46px;flex:none">${esc(r.time || '—')}</b><div class="grow"><div>${esc(r.text)}</div><div class="dd">${esc(daysLabel(r.days || []))}</div></div><button class="x" data-delrt="${esc(r.id)}" aria-label="Quitar de la rutina">×</button></div>`).join('')}<button class="link" data-act="newrt">＋ Añadir a la rutina</button></details>` : ''}
     ${sorted.length ? `<div class="card list">${sorted.map(taskRow).join('')}</div>` : `<p class="muted" style="text-align:center;margin:26px 0">${total ? 'Todo hecho. ¡Bien!' : 'Escribe arriba tu primera tarea. La fecha es opcional.'}</p>`}
+    ${routine.length ? '' : '<button class="btn sec2" data-act="newrt" style="margin:4px 0 14px">＋ Añadir algo a tu rutina semanal</button>'}
     ${done.length ? `<details class="card"><summary>Hechas (${done.length})</summary><div style="padding-top:4px">${done.slice().reverse().map(taskRow).join('')}</div></details>` : ''}`;
   else if (tab === 'notes') body = `<button class="btn sec2" data-act="newnote" style="margin-bottom:14px">＋ Nueva nota</button>
     ${sp.notes.slice().sort((a, b) => b.updated - a.updated).map(n => `<button class="note" data-note="${esc(n.id)}"><b>${esc(n.title || 'Sin título')}</b><p>${esc(n.body || '')}</p><span class="t2">${esc(new Date(n.updated).toLocaleString(LOC, {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'}))}</span></button>`).join('')
@@ -972,6 +1019,71 @@ function openSpaceEditor(sp) {
       });
     }
   });
+}
+function openRoutine(sp) {
+  let days = [], time = '', text = '';
+  const draw = () => {
+    $('#sbody').innerHTML = `<div class="form"><div class="field"><input id="rttext" style="text-align:left" placeholder="Ej.: Estudiar 2 h, Gym, Entreno…" maxlength="120" value="${esc(text)}"></div>
+      <div class="field"><label for="rttime">Hora (opcional)</label><input id="rttime" type="time" value="${esc(time)}"></div></div>
+      <div class="ghead">¿Qué días?</div><div class="form days">${DAYORDER.map(d => `<button data-day="${d}" class="${days.includes(d) ? 'on' : ''}">${DAYN[d]}</button>`).join('')}</div>
+      <div class="hint">Aparecerá en «Hoy», en tu pantalla de inicio, los días que elijas.</div>`;
+    const chk = () => setSaveEnabled($('#rttext').value.trim() && days.length);
+    $('#rttext').oninput = chk; chk();
+  };
+  openSheet('Rutina semanal', '', () => {
+    const tx = $('#rttext').value.trim(); if (!tx || !days.length) return;
+    (sp.routine = sp.routine || []).push({id: uid(), text: tx, time: $('#rttime').value, days: days.slice().sort()});
+    ST.rtOpen = true; save(); closeSheet(); render();
+  }, 'Añadir');
+  draw();
+  $('#sbody').addEventListener('click', e => {
+    const b = e.target.closest('[data-day]'); if (!b) return;
+    text = $('#rttext').value; time = $('#rttime').value;
+    const d = +b.dataset.day; days = days.includes(d) ? days.filter(x => x !== d) : [...days, d]; draw();
+  });
+}
+function cleanSpace(o) {
+  const str = (v, n) => String(v ?? '').slice(0, n);
+  const okDate = v => /^\d{4}-\d{2}-\d{2}$/.test(v || '') ? v : '';
+  return {id: str(o.id || uid(), 40), name: str(o.name || 'Espacio', 40), icon: str(o.icon || '⭐', 8), color: safeColor(o.color), tpl: str(o.tpl || 'blank', 20), created: Date.now(),
+    tasks: (Array.isArray(o.tasks) ? o.tasks : []).map(t => ({id: str(t.id || uid(), 40), text: str(t.text, 200), due: okDate(t.due), done: !!t.done, exam: !!t.exam, created: Date.now()})).filter(t => t.text),
+    notes: (Array.isArray(o.notes) ? o.notes : []).map(n => ({id: str(n.id || uid(), 40), title: str(n.title, 120), body: str(n.body, 20000), updated: Date.now()})),
+    links: (Array.isArray(o.links) ? o.links : []).filter(l => /^https:\/\//i.test(l.url || '')).map(l => ({id: str(l.id || uid(), 40), url: str(l.url, 500), title: str(l.title || new URL(l.url).hostname, 80)})),
+    routine: (Array.isArray(o.routine) ? o.routine : []).map(r => ({id: str(r.id || uid(), 40), text: str(r.text, 120), time: /^\d{2}:\d{2}$/.test(r.time || '') ? r.time : '', days: (Array.isArray(r.days) ? r.days : []).map(Number).filter(d => d >= 0 && d <= 6)})).filter(r => r.text && r.days.length)};
+}
+function openImport() {
+  openSheet('Importar espacios', `<p class="muted" style="font-size:14px;margin-top:0">Pega aquí el código que te ha preparado Claude. Se añadirán los espacios (si ya existe uno igual, se actualiza). Tu cartera no se toca.</p>
+    <textarea id="impsp" class="editor" style="min-height:35dvh;font:13px ui-monospace,monospace" placeholder="{&quot;spaces&quot;: …}"></textarea>
+    <button class="btn sec2" data-act="pasteimp" style="margin-top:10px">Pegar del portapapeles</button>`, () => {
+    let o; try { o = JSON.parse($('#impsp').value.trim()); } catch { toast('El código no es válido: cópialo entero'); return; }
+    const list = Array.isArray(o) ? o : o.spaces;
+    if (!Array.isArray(list) || !list.length) { toast('No he encontrado espacios en el código'); return; }
+    let added = 0, updated = 0;
+    for (const raw of list) {
+      const sp = cleanSpace(raw), i = D.spaces.findIndex(x => x.id === sp.id);
+      if (i >= 0) {
+        const old = D.spaces[i], doneIds = new Set(old.tasks.filter(t => t.done).map(t => t.id));
+        sp.tasks.forEach(t => { if (doneIds.has(t.id)) t.done = true; });
+        const own = old.tasks.filter(t => !sp.tasks.some(n => n.id === t.id));
+        sp.tasks.push(...own); sp.notes.push(...old.notes.filter(n => !sp.notes.some(x => x.id === n.id)));
+        sp.links.push(...old.links.filter(l => !sp.links.some(x => x.id === l.id)));
+        D.spaces[i] = sp; updated++;
+      } else { D.spaces.push(sp); added++; }
+    }
+    save(); closeSheet(); ST.app = 'hub'; render();
+    toast(`${added} espacios añadidos${updated ? `, ${updated} actualizados` : ''}`);
+  }, 'Importar');
+  $('#sbody').addEventListener('click', async e => {
+    if (!e.target.closest('[data-act=pasteimp]')) return;
+    try { $('#impsp').value = await navigator.clipboard.readText(); } catch { toast('Mantén pulsado el recuadro y elige «Pegar»'); }
+  });
+}
+function openRestore() {
+  openSheet('Restaurar copia', `<p class="muted">Pega aquí el texto de tu copia de seguridad. Sustituirá los datos actuales.</p><textarea id="imp" style="width:100%;height:220px;border-radius:12px;padding:10px;border:1px solid var(--line);background:var(--card);font:12px ui-monospace,monospace"></textarea>`, () => {
+    try { const o = JSON.parse($('#imp').value); if (!Array.isArray(o.holdings) || !Array.isArray(o.cash)) throw 0;
+      D.holdings = o.holdings; D.cash = o.cash; if (Array.isArray(o.spaces)) D.spaces = o.spaces; closeSheet(); dataChanged(); toast('Datos restaurados'); }
+    catch { toast('El texto no es una copia válida'); }
+  }, 'Restaurar');
 }
 function openNote(sp, note) {
   openSheet(note ? 'Nota' : 'Nueva nota', `<input class="titlein" id="ntitle" placeholder="Título" maxlength="120" value="${esc(note?.title || '')}">
@@ -1327,6 +1439,8 @@ document.addEventListener('click', async e => {
   const dtk = t.closest('[data-deltask]');
   if (dtk) { const sp = curSpace(); if (sp) { sp.tasks = sp.tasks.filter(y => y.id !== dtk.dataset.deltask); save(); render(); } return; }
   const nt = t.closest('[data-note]'); if (nt && !t.closest('#sheet')) { const sp = curSpace(), n = sp?.notes.find(y => y.id === nt.dataset.note); if (n) openNote(sp, n); return; }
+  const drt = t.closest('[data-delrt]');
+  if (drt) { const sp = curSpace(); if (sp) { sp.routine = (sp.routine || []).filter(y => y.id !== drt.dataset.delrt); ST.rtOpen = true; save(); render(); } return; }
   const dl = t.closest('[data-dellink]');
   if (dl) { const sp = curSpace(); if (sp) { sp.links = sp.links.filter(y => y.id !== dl.dataset.dellink); save(); render(); } return; }
   const tab = t.closest('[data-tab]');
@@ -1368,13 +1482,6 @@ document.addEventListener('click', async e => {
       try { await navigator.clipboard.writeText(txt); toast('Copia guardada en el portapapeles: pégala en Notas'); }
       catch { openSheet('Copia de seguridad', `<p class="muted">Copia este texto y guárdalo en Notas:</p><textarea style="width:100%;height:220px;border-radius:12px;padding:10px;border:1px solid var(--line);background:var(--card);font:12px ui-monospace,monospace" readonly>${esc(txt)}</textarea>`, null); }
       break; }
-    case 'import':
-      openSheet('Restaurar copia', `<p class="muted">Pega aquí el texto de tu copia de seguridad. Sustituirá los datos actuales.</p><textarea id="imp" style="width:100%;height:220px;border-radius:12px;padding:10px;border:1px solid var(--line);background:var(--card);font:12px ui-monospace,monospace"></textarea>`, () => {
-        try { const o = JSON.parse($('#imp').value); if (!Array.isArray(o.holdings) || !Array.isArray(o.cash)) throw 0;
-          D.holdings = o.holdings; D.cash = o.cash; if (Array.isArray(o.spaces)) D.spaces = o.spaces; closeSheet(); dataChanged(); toast('Datos restaurados'); }
-        catch { toast('El texto no es una copia válida'); }
-      }, 'Restaurar');
-      break;
     case 'wipe': confirmBox('Se borrarán todas tus inversiones y movimientos de este iPhone.', 'Borrar todo', () => {
       D.holdings = []; D.cash = []; D.snaps = []; D.alert = {}; Q = {}; saveQ(); dataChanged(); toast('Datos borrados'); }); break;
     case 'unlock': unlock(); break;
@@ -1382,6 +1489,9 @@ document.addEventListener('click', async e => {
     case 'newspace': openSpaceEditor(null); break;
     case 'editspace': { const sp = curSpace(); if (sp) openSpaceEditor(sp); break; }
     case 'newnote': { const sp = curSpace(); if (sp) openNote(sp, null); break; }
+    case 'newrt': { const sp = curSpace(); if (sp) openRoutine(sp); break; }
+    case 'examtoggle': { ST.newExam = !ST.newExam; const b = t.closest('[data-act=examtoggle]'); b.classList.toggle('on', ST.newExam); b.setAttribute('aria-pressed', ST.newExam); haptic(); toast(ST.newExam ? 'La próxima tarea será un examen' : 'Tarea normal'); break; }
+    case 'import': if (t.closest('[data-act=import]').dataset.kind === 'spaces') openImport(); else openRestore(); break;
     case 'refresh': haptic(); await refresh(true); toast(ST.error ? ST.error : 'Precios actualizados'); break;
   }
 });
@@ -1410,13 +1520,15 @@ document.addEventListener('change', async e => {
   }
 });
 $('#scrim').addEventListener('click', closeSheet);
+document.addEventListener('toggle', e => { if (e.target.matches?.('[data-rt]')) ST.rtOpen = e.target.open; }, true);
 document.addEventListener('submit', e => {
   const f = e.target.closest('[data-form]'); if (!f) return;
   e.preventDefault();
   const sp = curSpace(); if (!sp) return;
   if (f.dataset.form === 'task') {
     const text = $('#tnew').value.trim(); if (!text) return;
-    sp.tasks.push({id: uid(), text, due: $('#tdue').value || '', done: false, created: Date.now()});
+    sp.tasks.push({id: uid(), text, due: $('#tdue').value || '', done: false, exam: !!ST.newExam, created: Date.now()});
+    ST.newExam = false;
     save(); haptic(); render(); setTimeout(() => $('#tnew')?.focus(), 0);
   }
   if (f.dataset.form === 'link') {
