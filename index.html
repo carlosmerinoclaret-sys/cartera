@@ -232,17 +232,17 @@ const saveQ = () => { try { localStorage.setItem('cartera.quotes', JSON.stringif
    ============================================================ */
 // EODHD no admite llamadas directas desde páginas web (CORS), así que la app pasa por
 // un pequeño repetidor propio y gratuito (Cloudflare Worker, ver worker.js).
-const apiBase = () => (D.settings.proxy ? D.settings.proxy.trim().replace(/\/+$/, '') : 'https://eodhd.com') + '/api/';
+const DEFAULT_PROXY = 'https://cartera.carlosmerinoclaret.workers.dev';
+const apiBase = () => ((D.settings.proxy || '').trim() || DEFAULT_PROXY).replace(/\/+$/, '') + '/api/';
 class ApiError extends Error {}
 function usage(n) {
   const u = JSON.parse(localStorage.getItem('cartera.usage') || '{}');
   if (u.d !== today()) { u.d = today(); u.n = 0; }
   u.n += n; localStorage.setItem('cartera.usage', JSON.stringify(u));
 }
-const configured = () => !!(D.settings.apiKey || D.settings.proxy);
+const configured = () => true;
 const usageToday = () => { const u = JSON.parse(localStorage.getItem('cartera.usage') || '{}'); return u.d === today() ? u.n : 0; };
 async function api(path, params, cost) {
-  if (!D.settings.apiKey && !D.settings.proxy) throw new ApiError('Configura el servidor de datos en Ajustes para obtener cotizaciones.');
   let url;
   try { url = new URL(apiBase() + path); } catch { throw new ApiError('La dirección del servidor de datos no es válida.'); }
   const q = {...params, fmt: 'json'}; if (D.settings.apiKey) q.api_token = D.settings.apiKey;
@@ -251,8 +251,7 @@ async function api(path, params, cost) {
   try { r = await fetch(url, {cache: 'no-store'}); }
   catch {
     throw new ApiError(navigator.onLine === false ? 'Sin conexión a internet.'
-      : D.settings.proxy ? 'No se pudo conectar con tu servidor de datos. Revisa la dirección del Worker.'
-      : 'EODHD no permite conexiones directas desde una web: configura tu servidor de datos (Worker) en Ajustes.');
+      : 'No se pudo conectar con tu servidor de datos (Worker). Revisa la dirección en Ajustes.');
   }
   usage(cost);
   const msg = {401: 'La clave de API no es válida.', 402: 'Has agotado las consultas diarias de tu plan.',
@@ -761,7 +760,7 @@ function renderSettings() {
   main.innerHTML = `<div class="topbar"><span></span><h1>Ajustes</h1><span style="width:44px"></span></div>
   ${!standalone ? `<div class="banner info"><div><b>Instálala en tu iPhone</b><br><span class="muted">En Safari pulsa Compartir <b>⎙</b> y luego «Añadir a pantalla de inicio». Se abrirá a pantalla completa como una app.</span></div></div>` : ''}
   <div class="ghead">Datos de mercado · EODHD</div>
-  <div class="form"><div class="field"><label for="proxy">Servidor (Worker)</label><input id="proxy" type="url" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(st.proxy)}" placeholder="https://cartera.tu-usuario.workers.dev"></div>
+  <div class="form"><div class="field"><label for="proxy">Servidor (Worker)</label><input id="proxy" type="url" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(st.proxy)}" placeholder="${esc(DEFAULT_PROXY)}"></div>
     <div class="field"><label for="key">Clave API</label><input id="key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(st.apiKey)}" placeholder="Opcional si está en el Worker"></div></div>
   <div class="hint">El servidor es tu Worker gratuito de Cloudflare (sigue la guía de instalación). Si guardaste la clave dentro del Worker, deja vacío el campo «Clave API».</div>
   <div class="btns" style="margin-top:10px"><button class="btn pri" data-act="savekey">Guardar y probar</button></div>
