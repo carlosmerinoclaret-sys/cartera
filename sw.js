@@ -1,5 +1,5 @@
 // Service worker: la app funciona sin conexión; las cotizaciones siempre van a la red.
-const CACHE = 'cartera-v5';
+const CACHE = 'cartera-v6';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
