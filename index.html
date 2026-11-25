@@ -291,12 +291,59 @@ const haptic = () => { try { navigator.vibrate?.(8); } catch {} };
    Persistencia (localStorage, solo en este iPhone)
    ============================================================ */
 const KEY = 'cartera.v1';
-const defaults = () => ({holdings: [], cash: [], snaps: [], alert: {}, spaces: [],
-  settings: {apiKey: '', proxy: 'https://cartera.carlosmerinoclaret.workers.dev', interval: 30, alerts: false, threshold: 2, alertMode: 'daily', lock: false, credId: null, hide: false}});
+const defaults = () => ({holdings: [], cash: [], snaps: [], alert: {}, spaces: [], log: {}, updatedAt: 0,
+  settings: {syncKey: '', apiKey: '', proxy: 'https://cartera.carlosmerinoclaret.workers.dev', interval: 30, alerts: false, threshold: 2, alertMode: 'daily', lock: false, credId: null, hide: false}});
 let D;
 try { D = Object.assign(defaults(), JSON.parse(localStorage.getItem(KEY) || '{}')); D.settings = Object.assign(defaults().settings, D.settings); }
 catch { D = defaults(); }
-function save() { try { localStorage.setItem(KEY, JSON.stringify(D)); } catch { toast('No se pudo guardar (almacenamiento lleno)'); } }
+// ---- Sincronización online (repo privado vía tu Worker) ----
+const syncPayload = () => JSON.stringify({holdings: D.holdings, cash: D.cash, spaces: D.spaces, log: D.log});
+let lastSynced = null, syncTimer = null, applyingRemote = false;
+const SYNC = {state: 'off', at: 0, msg: ''};
+function save() {
+  try {
+    const cur = syncPayload();
+    if (lastSynced !== null && cur !== lastSynced && !applyingRemote) { D.updatedAt = Date.now(); scheduleSync(); }
+    localStorage.setItem(KEY, JSON.stringify(D));
+  } catch { toast('No se pudo guardar (almacenamiento lleno)'); }
+}
+const syncOn = () => !!(D.settings.syncKey || '').trim();
+const syncUrl = () => ((D.settings.proxy || '').trim() || DEFAULT_PROXY).replace(/\/+$/, '') + '/sync';
+function scheduleSync() { if (!syncOn()) return; clearTimeout(syncTimer); syncTimer = setTimeout(pushSync, 2500); }
+async function pushSync() {
+  if (!syncOn()) return;
+  const body = JSON.stringify({app: 'cartera', version: 1, updatedAt: D.updatedAt || Date.now(), savedAt: new Date().toISOString(),
+    holdings: D.holdings, cash: D.cash, spaces: D.spaces, log: D.log});
+  try {
+    const r = await fetch(syncUrl(), {method: 'PUT', headers: {'Content-Type': 'application/json', 'X-Sync-Key': D.settings.syncKey.trim()}, body});
+    if (!r.ok) throw new Error(r.status === 401 ? 'Clave de sincronización incorrecta' : 'Error ' + r.status);
+    lastSynced = syncPayload(); Object.assign(SYNC, {state: 'ok', at: Date.now(), msg: ''});
+  } catch (e) { Object.assign(SYNC, {state: 'err', msg: e.message || 'Sin conexión'}); }
+  if (ST.tab === 'settings' && ST.app === 'cartera') render();
+}
+async function pullSync() {
+  if (!syncOn()) { lastSynced = syncPayload(); return; }
+  try {
+    const r = await fetch(syncUrl(), {headers: {'X-Sync-Key': D.settings.syncKey.trim()}, cache: 'no-store'});
+    if (!r.ok) throw new Error(r.status === 401 ? 'Clave de sincronización incorrecta' : 'Error ' + r.status);
+    const o = await r.json();
+    if (o && o.updatedAt && o.updatedAt > (D.updatedAt || 0) && Array.isArray(o.holdings)) {
+      applyingRemote = true;
+      D.holdings = o.holdings; D.cash = o.cash || []; D.spaces = (o.spaces || []).map(cleanSpaceKeepDone); D.log = o.log || {}; D.updatedAt = o.updatedAt;
+      save(); applyingRemote = false; lastSynced = syncPayload();
+      loadSeries(); if (ST.app !== 'cartera' || ST.tab !== 'settings') render();
+    } else {
+      lastSynced = syncPayload();
+      if (!o || !o.updatedAt || (D.updatedAt || 0) > o.updatedAt) { if (!D.updatedAt) D.updatedAt = Date.now(); await pushSync(); }
+    }
+    Object.assign(SYNC, {state: 'ok', at: Date.now(), msg: ''});
+  } catch (e) { lastSynced = lastSynced ?? syncPayload(); Object.assign(SYNC, {state: 'err', msg: e.message || 'Sin conexión'}); }
+}
+function cleanSpaceKeepDone(o) {
+  const sp = cleanSpace(o);
+  sp.tasks.forEach(t => { const src = (o.tasks || []).find(x => x.id === t.id); if (src && src.doneAt) t.doneAt = src.doneAt; });
+  return sp;
+}
 let Q = {};   // cotizaciones: símbolo → {p, pc, t, f}
 try { Q = JSON.parse(localStorage.getItem('cartera.quotes') || '{}'); } catch {}
 const saveQ = () => { try { localStorage.setItem('cartera.quotes', JSON.stringify(Q)); } catch {} };
@@ -861,6 +908,11 @@ function renderSettings() {
     <div class="field"><label for="alm">Tipo</label><select id="alm"><option value="daily" ${st.alertMode === 'daily' ? 'selected' : ''}>Variación del día</option><option value="since" ${st.alertMode === 'since' ? 'selected' : ''}>Desde el último aviso</option></select></div>
     <div class="field"><label for="alt">Umbral (±%)</label><input id="alt" inputmode="decimal" value="${esc(plain(st.threshold, 1))}"></div></div>
   <div class="hint">Las notificaciones funcionan con la app añadida a la pantalla de inicio (iOS 16.4 o posterior) y saltan mientras la app está abierta o recién usada.</div>
+  <div class="ghead">Sincronización online</div>
+  <div class="form"><div class="field"><label for="synckey">Clave privada</label><input id="synckey" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(st.syncKey || '')}" placeholder="Pega tu clave"></div></div>
+  <div class="btns" style="margin-top:10px"><button class="btn sec2" data-act="savesync">${st.syncKey ? 'Sincronizar ahora' : 'Activar sincronización'}</button></div>
+  <div class="hint" style="padding-top:0">${!st.syncKey ? 'Con la sincronización, lo que marques se guarda en tu repositorio privado de GitHub: lo ves igual en el móvil y en el ordenador, y Claude puede revisarlo cada día.'
+    : SYNC.state === 'ok' ? `<span class="gain">✓ Sincronizado</span> · ${esc(timeFmt(SYNC.at))}` : SYNC.state === 'err' ? `<span class="loss">✗ ${esc(SYNC.msg)}</span>` : 'Comprobando…'}</div>
   <div class="ghead">Datos</div>
   <div class="btns"><button class="btn sec2" data-act="export">Copia de seguridad</button><button class="btn sec2" data-act="import">Restaurar</button></div>
   <div class="btns"><button class="btn sec2" data-act="import" data-kind="spaces">Importar espacios</button></div>
@@ -906,8 +958,8 @@ const daysUntil = ymdStr => Math.round((parseYmd(ymdStr) - parseYmd(today())) / 
 function todayItems() {
   const wd = new Date().getDay(), t = today(), out = [];
   for (const sp of D.spaces) {
-    for (const r of sp.routine || []) if ((r.days || []).includes(wd)) out.push({sp, time: r.time || '', text: r.text});
-    for (const k of sp.tasks) if (!k.done && k.due === t) out.push({sp, time: '', text: k.text, task: true, exam: k.exam});
+    for (const r of sp.routine || []) if ((r.days || []).includes(wd)) out.push({sp, time: r.time || '', text: r.text, key: `r:${sp.id}:${r.id}`, done: (D.log[t] || []).includes(`${sp.id}:${r.id}`)});
+    for (const k of sp.tasks) if (k.due === t && (!k.done || k.doneAt > parseYmd(t).getTime())) out.push({sp, time: '', text: k.text, task: true, exam: k.exam, key: `t:${sp.id}:${k.id}`, done: k.done});
   }
   return out.sort((a, b) => (a.time || '99') < (b.time || '99') ? -1 : (a.time || '99') > (b.time || '99') ? 1 : 0);
 }
@@ -939,7 +991,8 @@ function renderHub() {
   })()}
   ${(() => {
     const it = todayItems(); if (!D.spaces.length) return '';
-    return `<div class="sec"><h2>Hoy</h2><span class="muted" style="font-size:14px">${esc(new Date().toLocaleDateString(LOC, {weekday: 'long'}))}</span></div><div class="card today">${it.length ? it.map(x => `<button class="it" style="width:100%;text-align:left" data-app="${esc(x.sp.id)}"><span class="tm">${esc(x.time || (x.task ? '·' : ''))}</span><span class="mini" style="width:28px;height:28px;font-size:15px;border-radius:8px;background:${grad(safeColor(x.sp.color))}">${esc(x.sp.icon)}</span><span class="grow">${esc(x.text)}</span>${x.exam ? '<span class="due late">Examen</span>' : ''}</button>`).join('') : '<p class="muted" style="margin:4px 0">Nada programado para hoy.</p>'}</div>`;
+    return `<div class="sec"><h2>Hoy</h2><span class="muted" style="font-size:14px">${esc(new Date().toLocaleDateString(LOC, {weekday: 'long'}))}</span></div><div class="card today">${it.length ? `<div class="t2" style="margin:-2px 0 4px">${it.filter(x => x.done).length} de ${it.length} hechas</div>` + it.map(x => `<div class="it ${x.done ? 'done' : ''}"><button class="chk ${x.done ? 'on' : ''}" style="--sc:${safeColor(x.sp.color)}" data-check="${esc(x.key)}" aria-label="${x.done ? 'Desmarcar' : 'Marcar como hecho'}">${x.done ? '✓' : ''}</button>
+      <button class="grow" style="text-align:left;display:flex;gap:10px;align-items:center" data-app="${esc(x.sp.id)}"><span class="mini" style="width:28px;height:28px;font-size:15px;border-radius:8px;background:${grad(safeColor(x.sp.color))}">${esc(x.sp.icon)}</span><span class="grow tt" style="${x.done ? 'text-decoration:line-through;color:var(--muted)' : ''}">${esc(x.text)}</span>${x.time ? `<span class="tm" style="width:auto">${esc(x.time)}</span>` : ''}${x.exam ? '<span class="due late">Examen</span>' : ''}</button></div>`).join('') : '<p class="muted" style="margin:4px 0">Nada programado para hoy.</p>'}</div>`;
   })()}
   ${upcoming.length ? `<div class="sec"><h2>Próximo</h2></div><div class="card list">${upcoming.map(({sp, t}) => `<button class="task" data-app="${esc(sp.id)}">
       <span class="mini" style="background:${grad(safeColor(sp.color))}">${esc(sp.icon)}</span><div class="grow"><div class="t1">${esc(t.text)}</div><div class="t2">${esc(sp.name)}</div></div>${dueChip(t.due)}</button>`).join('')}</div>` : ''}
@@ -1045,9 +1098,9 @@ function openRoutine(sp) {
 function cleanSpace(o) {
   const str = (v, n) => String(v ?? '').slice(0, n);
   const okDate = v => /^\d{4}-\d{2}-\d{2}$/.test(v || '') ? v : '';
-  return {id: str(o.id || uid(), 40), name: str(o.name || 'Espacio', 40), icon: str(o.icon || '⭐', 8), color: safeColor(o.color), tpl: str(o.tpl || 'blank', 20), created: Date.now(),
-    tasks: (Array.isArray(o.tasks) ? o.tasks : []).map(t => ({id: str(t.id || uid(), 40), text: str(t.text, 200), due: okDate(t.due), done: !!t.done, exam: !!t.exam, created: Date.now()})).filter(t => t.text),
-    notes: (Array.isArray(o.notes) ? o.notes : []).map(n => ({id: str(n.id || uid(), 40), title: str(n.title, 120), body: str(n.body, 20000), updated: Date.now()})),
+  return {id: str(o.id || uid(), 40), name: str(o.name || 'Espacio', 40), icon: str(o.icon || '⭐', 8), color: safeColor(o.color), tpl: str(o.tpl || 'blank', 20), created: Number(o.created) || Date.now(),
+    tasks: (Array.isArray(o.tasks) ? o.tasks : []).map(t => ({id: str(t.id || uid(), 40), text: str(t.text, 200), due: okDate(t.due), done: !!t.done, exam: !!t.exam, created: Number(t.created) || Date.now(), doneAt: Number(t.doneAt) || null})).filter(t => t.text),
+    notes: (Array.isArray(o.notes) ? o.notes : []).map(n => ({id: str(n.id || uid(), 40), title: str(n.title, 120), body: str(n.body, 20000), updated: Number(n.updated) || Date.now()})),
     links: (Array.isArray(o.links) ? o.links : []).filter(l => /^https:\/\//i.test(l.url || '')).map(l => ({id: str(l.id || uid(), 40), url: str(l.url, 500), title: str(l.title || new URL(l.url).hostname, 80)})),
     routine: (Array.isArray(o.routine) ? o.routine : []).map(r => ({id: str(r.id || uid(), 40), text: str(r.text, 120), time: /^\d{2}:\d{2}$/.test(r.time || '') ? r.time : '', days: (Array.isArray(r.days) ? r.days : []).map(Number).filter(d => d >= 0 && d <= 6)})).filter(r => r.text && r.days.length)};
 }
@@ -1433,6 +1486,17 @@ document.addEventListener('click', async e => {
   const t = e.target;
   if (!$('#menu').hidden && !t.closest('#menu') && !t.closest('[data-act=menu],[data-act=cashmenu],[data-act=dmenu]')) hideMenu();
   const ap = t.closest('[data-app]'); if (ap) { openApp(ap.dataset.app); return; }
+  const ck = t.closest('[data-check]');
+  if (ck) {
+    const [kind, spId, id] = ck.dataset.check.split(':'), sp = D.spaces.find(x => x.id === spId);
+    if (sp && kind === 'r') {
+      const d = today(), arr = D.log[d] || (D.log[d] = []), k = `${spId}:${id}`;
+      D.log[d] = arr.includes(k) ? arr.filter(x => x !== k) : [...arr, k];
+      const cut = addDays(d, -400); for (const day of Object.keys(D.log)) if (day < cut || !D.log[day].length) delete D.log[day];
+    }
+    if (sp && kind === 't') { const x = sp.tasks.find(y => y.id === id); if (x) { x.done = !x.done; x.doneAt = x.done ? Date.now() : null; } }
+    save(); haptic(); render(); return;
+  }
   const stb = t.closest('[data-stab]'); if (stb) { ST.stab = stb.dataset.stab; render(); haptic(); return; }
   const tk = t.closest('[data-task]');
   if (tk) { const sp = curSpace(), x = sp?.tasks.find(y => y.id === tk.dataset.task); if (x) { x.done = !x.done; x.doneAt = x.done ? Date.now() : null; save(); haptic(); render(); } return; }
@@ -1478,7 +1542,7 @@ document.addEventListener('click', async e => {
       } catch (err) { res.innerHTML = `<span class="loss">✗ ${esc(err.message)}</span>`; }
       break; }
     case 'export': {
-      const txt = JSON.stringify({holdings: D.holdings, cash: D.cash, spaces: D.spaces});
+      const txt = JSON.stringify({holdings: D.holdings, cash: D.cash, spaces: D.spaces, log: D.log});
       try { await navigator.clipboard.writeText(txt); toast('Copia guardada en el portapapeles: pégala en Notas'); }
       catch { openSheet('Copia de seguridad', `<p class="muted">Copia este texto y guárdalo en Notas:</p><textarea style="width:100%;height:220px;border-radius:12px;padding:10px;border:1px solid var(--line);background:var(--card);font:12px ui-monospace,monospace" readonly>${esc(txt)}</textarea>`, null); }
       break; }
@@ -1489,6 +1553,10 @@ document.addEventListener('click', async e => {
     case 'newspace': openSpaceEditor(null); break;
     case 'editspace': { const sp = curSpace(); if (sp) openSpaceEditor(sp); break; }
     case 'newnote': { const sp = curSpace(); if (sp) openNote(sp, null); break; }
+    case 'savesync': {
+      const k = $('#synckey').value.trim(); D.settings.syncKey = k; localStorage.setItem(KEY, JSON.stringify(D));
+      if (!k) { SYNC.state = 'off'; render(); break; }
+      SYNC.state = 'wait'; render(); await pullSync(); render(); toast(SYNC.state === 'ok' ? 'Sincronizado' : SYNC.msg); break; }
     case 'newrt': { const sp = curSpace(); if (sp) openRoutine(sp); break; }
     case 'examtoggle': { ST.newExam = !ST.newExam; const b = t.closest('[data-act=examtoggle]'); b.classList.toggle('on', ST.newExam); b.setAttribute('aria-pressed', ST.newExam); haptic(); toast(ST.newExam ? 'La próxima tarea será un examen' : 'Tarea normal'); break; }
     case 'import': if (t.closest('[data-act=import]').dataset.kind === 'spaces') openImport(); else openRestore(); break;
@@ -1546,6 +1614,7 @@ document.addEventListener('visibilitychange', () => {
     document.body.classList.remove('blur');
     if (D.settings.lock && Date.now() - hiddenAt > 30000) showLock();
     refresh().then(scheduleLoop);
+    pullSync();
   }
 });
 let resizeT; addEventListener('pageshow', e => { if (e.persisted) refresh(true).then(scheduleLoop); });
@@ -1559,6 +1628,7 @@ showLock();
 ST.lastOk = Math.max(0, ...Object.values(Q).map(q => q.f || 0)) || null;
 render();
 loadSeries();
+pullSync();
 refresh().then(scheduleLoop);
 }
 </script>
