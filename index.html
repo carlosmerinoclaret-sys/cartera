@@ -218,7 +218,7 @@ const haptic = () => { try { navigator.vibrate?.(8); } catch {} };
    ============================================================ */
 const KEY = 'cartera.v1';
 const defaults = () => ({holdings: [], cash: [], snaps: [], alert: {},
-  settings: {apiKey: '', proxy: '', interval: 30, alerts: false, threshold: 2, alertMode: 'daily', lock: false, credId: null, hide: false}});
+  settings: {apiKey: '', proxy: 'https://cartera.carlosmerinoclaret.workers.dev', interval: 30, alerts: false, threshold: 2, alertMode: 'daily', lock: false, credId: null, hide: false}});
 let D;
 try { D = Object.assign(defaults(), JSON.parse(localStorage.getItem(KEY) || '{}')); D.settings = Object.assign(defaults().settings, D.settings); }
 catch { D = defaults(); }
