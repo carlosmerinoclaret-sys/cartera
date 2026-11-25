@@ -1,5 +1,5 @@
 // Service worker: la app funciona sin conexión; las cotizaciones siempre van a la red.
-const CACHE = 'cartera-v7';
+const CACHE = 'cartera-v8';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -17,7 +17,7 @@ self.addEventListener('fetch', e => {
   if (url.origin !== location.origin) return;          // API externa: sin caché
   // Red primero (para recibir actualizaciones de la app) y caché si no hay conexión.
   e.respondWith(
-    fetch(e.request).then(r => {
+    fetch(e.request, {cache: 'no-store'}).then(r => {
       const copy = r.clone();
       caches.open(CACHE).then(c => c.put(e.request, copy));
       return r;
