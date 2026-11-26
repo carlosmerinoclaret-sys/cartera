@@ -73,7 +73,6 @@ export default {
 // claves que el propio Worker genera y guarda en la base la primera vez.
 const HABITOS = [
   { id: 'gym', nombre: 'Gimnasio', emoji: '🏋️' },
-  { id: 'deporte', nombre: 'Deporte', emoji: '⚽' },
   { id: 'estudio', nombre: 'Estudio', emoji: '📚' },
   { id: 'comida', nombre: 'Comida sana', emoji: '🥗' },
   { id: 'alcohol', nombre: '0 alcohol', emoji: '🚫' },
@@ -159,13 +158,18 @@ async function focus(request, env, url, json, ctx) {
     const fila = await q('SELECT data FROM retos WHERE code = ?', code).first();
     if (!fila) return null;
     const r = JSON.parse(fila.data);
+    // Los hábitos son siempre los actuales (así un cambio de hábitos llega también a los retos ya creados).
+    const maxDia = HABITOS.length + 1, metaVieja = Math.round(r.dias * ((r.habitos?.length || HABITOS.length) + 1) * 0.8 / 5) * 5;
+    if (r.meta === metaVieja) r.meta = Math.round(r.dias * maxDia * 0.8 / 5) * 5;
+    r.meta = Math.min(r.meta, r.dias * maxDia);
+    r.habitos = HABITOS;
     const ms = (await q('SELECT id, nombre, emoji, color, unido, token FROM miembros WHERE code = ? ORDER BY rowid', code).all()).results;
     r.miembros = {}; r.tokens = {}; r.marcas = {}; r.fotos = {};
     for (const m of ms) { r.miembros[m.id] = { nombre: m.nombre, emoji: m.emoji, color: m.color, unido: m.unido }; r.tokens[m.id] = m.token; r.marcas[m.id] = {}; }
     const orden = HABITOS.map(h => h.id);
     const mk = (await q('SELECT id, fecha, habito, ts FROM marcas WHERE code = ?', code).all()).results;
     for (const m of mk) {
-      if (!r.marcas[m.id]) continue;
+      if (!r.marcas[m.id] || !orden.includes(m.habito)) continue;
       (r.marcas[m.id][m.fecha] ||= []).push(m.habito);
       ((r.fotos[m.id] ||= {})[m.fecha] ||= {})[m.habito] = m.ts;
     }
@@ -254,7 +258,7 @@ async function focus(request, env, url, json, ctx) {
     let c;
     for (let i = 0; i < 10; i++) { c = aleatorio(6, 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'); if (!(await q('SELECT 1 FROM retos WHERE code = ?', c).first())) break; }
     const r = { nombre: texto(body.reto, 40) || 'Operación Batman', creado: hoyMadrid(), inicio, dias,
-      meta: Math.min(dias * 6, Math.max(10, parseInt(body.meta) || Math.round(dias * 6 * 0.8 / 5) * 5)), habitos: HABITOS, miembros: {} };
+      meta: Math.min(dias * (HABITOS.length + 1), Math.max(10, parseInt(body.meta) || Math.round(dias * (HABITOS.length + 1) * 0.8 / 5) * 5)), habitos: HABITOS, miembros: {} };
     await q('INSERT INTO retos (code, data) VALUES (?, ?)', c, '{}').run();
     const yo = await nuevoMiembro(c, r, body);
     r.creador = yo.id;
@@ -327,7 +331,7 @@ async function focus(request, env, url, json, ctx) {
     if (body.reto) r.nombre = texto(body.reto, 40) || r.nombre;
     if (esFecha(body.inicio)) r.inicio = body.inicio;
     if (body.dias) r.dias = Math.min(60, Math.max(3, parseInt(body.dias) || r.dias));
-    if (body.meta) r.meta = Math.min(r.dias * 6, Math.max(10, parseInt(body.meta) || r.meta));
+    if (body.meta) r.meta = Math.min(r.dias * (HABITOS.length + 1), Math.max(10, parseInt(body.meta) || r.meta));
     await guardarDatos(code, r);
     if (body.expulsar && body.expulsar !== r.creador && r.miembros[body.expulsar]) await borrarMiembro(code, body.expulsar);
     return json({ ok: true, reto: vistaPublica(code, await leerReto(code)) });
