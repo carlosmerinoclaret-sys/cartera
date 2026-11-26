@@ -106,6 +106,20 @@ nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
 nav button b{font-size:22px;line-height:1.1}
 nav button.on{color:var(--lime)}
 .toast{position:fixed;left:50%;bottom:calc(96px + var(--bot));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:14px;font-weight:700;z-index:50;max-width:90vw;text-align:center;box-shadow:0 8px 24px #0008}
+.hab.subiendo{opacity:.6;pointer-events:none}
+.hab .ft{width:44px;height:44px;border-radius:10px;object-fit:cover;flex:none}
+.dots i.on{cursor:pointer}
+.modal{position:fixed;inset:0;background:#000d;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(var(--top) + 16px) 16px calc(var(--bot) + 16px)}
+.modal img{max-width:100%;max-height:68vh;border-radius:16px;object-fit:contain;background:var(--card)}
+.modal .tt{font-weight:900;font-size:20px;margin:0 0 4px;text-align:center}
+.modal .acc{display:flex;gap:10px;width:100%;max-width:420px}
+.modal .acc .btn{margin-top:14px}
+.tira{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x mandatory}
+.tira button{flex:none;width:88px;scroll-snap-align:start;text-align:left;font-size:12px;color:var(--mute)}
+.tira img{width:88px;height:88px;border-radius:12px;object-fit:cover;display:block;margin-bottom:4px;background:var(--card2)}
+.banner{display:flex;gap:12px;align-items:center;background:var(--card2);border-radius:14px;padding:12px 14px;margin-bottom:14px}
+.banner p{margin:0;flex:1;font-size:14px}
+.banner .btn{width:auto;margin:0;padding:10px 14px;min-height:44px;font-size:15px}
 .aviso{background:#ff6b4a22;color:#ffb8a6;border-radius:12px;padding:10px 12px;font-size:14px;margin-bottom:12px}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -141,7 +155,7 @@ nav button.on{color:var(--lime)}
       <input id="cInicio" type="date" required>
       <label for="cDias">Duración</label>
       <select id="cDias"><option value="7">1 semana</option><option value="14">2 semanas</option><option value="21" selected>3 semanas</option><option value="28">4 semanas</option></select>
-      <p class="muted">Hábitos: gimnasio, deporte, estudio, comida sana y 0 alcohol. Cada hábito cumplido es una casilla; el día perfecto (los 5) suma una casilla extra.</p>
+      <p class="muted">Hábitos: gimnasio, deporte, estudio, comida sana y 0 alcohol. Cada hábito se marca con una foto hecha en el momento y suma una casilla; el día perfecto (los 5) suma una extra.</p>
       <button class="btn" type="submit">Crear reto</button>
     </form>
   </main>
@@ -152,6 +166,7 @@ nav button.on{color:var(--lime)}
   <header><div><h1 id="hTitulo">Focus</h1><div class="sub" id="hSub"></div></div><div class="dia" id="hDia"></div></header>
   <main>
     <div id="vHoy">
+      <div class="banner hidden" id="bannerAvisos"><p>Activa los avisos para enterarte cuando alguien cumple un hábito.</p><button class="btn" id="bActivarB">Activar</button></div>
       <div class="aviso hidden" id="avisoHoy"></div>
       <div class="card">
         <div class="fechas" id="fechas"></div>
@@ -159,10 +174,11 @@ nav button.on{color:var(--lime)}
         <div class="resumen"><span id="resTxt"></span><span class="big" id="resNum"></span></div>
       </div>
       <div class="card"><h2>El grupo hoy</h2><div id="grupoHoy"></div></div>
+      <div class="card hidden" id="cardTira"><h2>Últimas fotos</h2><div class="tira" id="tira"></div></div>
     </div>
     <div id="vTablero" class="hidden">
       <div id="ganador"></div>
-      <div class="card"><h2>Casillero</h2><div class="tablero" id="tablero"></div><p class="muted" style="margin:12px 0 0">Cada hábito = 1 casilla · Día perfecto = +1 extra · Meta en la casilla <b id="metaTxt"></b></p></div>
+      <div class="card"><h2>Casillero</h2><div class="tablero" id="tablero"></div><p class="muted" style="margin:12px 0 0">Cada hábito con foto = 1 casilla · Día perfecto = +1 extra · Meta en la casilla <b id="metaTxt"></b></p></div>
       <div class="card rank"><h2>Clasificación</h2><div id="ranking"></div></div>
     </div>
     <div id="vGrupo" class="hidden">
@@ -173,6 +189,10 @@ nav button.on{color:var(--lime)}
     <div id="vReto" class="hidden">
       <div class="card" style="text-align:center"><div class="muted">Código para invitar</div><div class="codigo" id="rCode"></div>
         <button class="btn" id="bInvitar">Invitar amigos</button><p class="muted" id="rLink" style="word-break:break-all;margin-bottom:0"></p></div>
+      <div class="card"><h2>Avisos</h2><p class="muted" id="avTxt" style="margin-top:0"></p>
+        <button class="btn" id="bActivar">Activar avisos en este móvil</button>
+        <button class="btn sec hidden" id="bProbar">Enviarme un aviso de prueba</button>
+        <button class="btn peligro hidden" id="bDesactivar">Desactivar avisos</button></div>
       <div class="card"><h2>Miembros</h2><div id="rMiembros"></div></div>
       <form class="card hidden" id="fAjustes"><h2>Ajustes del reto</h2>
         <label for="aReto">Nombre</label><input id="aReto" maxlength="40">
@@ -192,6 +212,9 @@ nav button.on{color:var(--lime)}
   </nav>
 </section>
 
+<input type="file" id="camara" accept="image/*" capture="environment" class="hidden">
+<div class="modal hidden" id="modal"><p class="tt" id="mTit"></p><p class="muted" id="mSub" style="margin:0 0 12px"></p><img id="mImg" alt="">
+  <div class="acc"><button class="btn sec" id="mCerrar">Cerrar</button><button class="btn peligro hidden" id="mQuitar">Quitar marca</button></div></div>
 <div class="toast hidden" id="toast"></div>
 
 <script>
@@ -204,6 +227,12 @@ const hoyLocal = () => new Intl.DateTimeFormat('en-CA', {timeZone: 'Europe/Madri
 const sumaDias = (f, n) => { const d = new Date(f + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 const difDias = (a, b) => Math.round((new Date(b + 'T12:00:00Z') - new Date(a + 'T12:00:00Z')) / 864e5);
 const corta = f => new Date(f + 'T12:00:00Z').toLocaleDateString('es-ES', {day: 'numeric', month: 'short', timeZone: 'UTC'});
+const hora = ts => new Date(ts).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Madrid'});
+let subiendo = null;
+function fotoUrl(id, f, h) {
+  const ts = reto?.fotos?.[id]?.[f]?.[h]; if (!ts) return null;
+  return `${SERVER}/focus/foto?c=${encodeURIComponent(reto.code)}&m=${encodeURIComponent(id)}&f=${f}&h=${encodeURIComponent(h)}&v=${ts}`;
+}
 
 // Estado guardado en el móvil: qué retos tienes y tu identificación en cada uno.
 let mem = {activo: null, retos: {}};
@@ -270,8 +299,11 @@ function pintarHoy() {
   } else aviso.classList.add('hidden');
   $('fechas').innerHTML = opciones.map(f => `<button data-f="${f}" class="${f === fechaSel ? 'on' : ''}">${f === hoy ? 'Hoy' : 'Ayer'} · ${corta(f)}</button>`).join('');
   const mias = (reto.marcas[yo().id] || {})[fechaSel] || [];
-  $('habs').innerHTML = reto.habitos.map(h => `<button class="hab ${mias.includes(h.id) ? 'on' : ''}" data-h="${h.id}" ${fechaSel ? '' : 'disabled'}>
-    <span class="e">${esc(h.emoji)}</span><span class="n">${esc(h.nombre)}</span><span class="ck">${mias.includes(h.id) ? '✓' : ''}</span></button>`).join('');
+  $('habs').innerHTML = reto.habitos.map(h => {
+    const on = mias.includes(h.id), sub = subiendo === fechaSel + h.id, url = on && fotoUrl(yo().id, fechaSel, h.id);
+    return `<button class="hab ${on ? 'on' : ''} ${sub ? 'subiendo' : ''}" data-h="${h.id}" ${fechaSel ? '' : 'disabled'}>
+    <span class="e">${esc(h.emoji)}</span><span class="n">${esc(h.nombre)}${sub ? '<br><span class="yo">Subiendo foto…</span>' : on ? '' : '<br><span class="yo">📷 Haz la foto para marcarlo</span>'}</span>
+    ${url ? `<img class="ft" src="${esc(url)}" alt="">` : ''}<span class="ck">${on ? '✓' : ''}</span></button>`; }).join('');
   const k = mias.length, t = reto.habitos.length;
   $('resTxt').textContent = k === t ? '¡Día perfecto! +1 casilla extra' : `${t - k} por cumplir`;
   $('resNum').textContent = `${k}/${t}`;
@@ -280,8 +312,17 @@ function pintarHoy() {
     const l = (reto.marcas[m.id] || {})[dia] || [];
     return `<div class="fila"><span class="av" style="--c:${esc(m.color)}">${esc(m.emoji)}</span>
       <span class="nm">${esc(m.nombre)} ${m.id === yo().id ? '<span class="yo">(tú)</span>' : ''}</span>
-      <span class="dots">${reto.habitos.map(h => `<i class="${l.includes(h.id) ? 'on' : ''}">${l.includes(h.id) ? esc(h.emoji) : ''}</i>`).join('')}</span></div>`;
+      <span class="dots">${reto.habitos.map(h => `<i class="${l.includes(h.id) ? 'on' : ''}" ${l.includes(h.id) ? `data-ver="${esc(m.id)}|${dia}|${h.id}"` : ''}>${l.includes(h.id) ? esc(h.emoji) : ''}</i>`).join('')}</span></div>`;
   }).join('') || '<p class="muted">Aún no hay nadie.</p>';
+  // últimas fotos del grupo (hoy y ayer)
+  const fotos = [];
+  for (const [id, porDia] of Object.entries(reto.fotos || {})) for (const f of [hoy, sumaDias(hoy, -1)])
+    for (const [h, ts] of Object.entries(porDia[f] || {})) if (reto.miembros[id]) fotos.push({id, f, h, ts});
+  fotos.sort((a, b) => b.ts - a.ts);
+  $('cardTira').classList.toggle('hidden', !fotos.length);
+  $('tira').innerHTML = fotos.slice(0, 20).map(x => { const m = reto.miembros[x.id], hb = reto.habitos.find(h => h.id === x.h) || {};
+    return `<button data-ver="${esc(x.id)}|${x.f}|${esc(x.h)}"><img loading="lazy" src="${esc(fotoUrl(x.id, x.f, x.h))}" alt="">${esc(m.emoji)} ${esc(m.nombre)}<br>${esc(hb.emoji)} ${hora(x.ts)}</button>`; }).join('');
+  $('bannerAvisos').classList.toggle('hidden', !!yo().avisos || !!yo().sinBanner);
 }
 
 function pintarTablero() {
@@ -328,6 +369,7 @@ function pintarGrupo() {
 
 function enlace() { return location.origin + location.pathname + '?c=' + reto.code; }
 function pintarReto() {
+  pintarAvisos();
   $('rCode').textContent = reto.code;
   $('rLink').textContent = enlace();
   const soyCreador = yo().id === reto.creador;
@@ -393,21 +435,99 @@ $('fCrear').onsubmit = e => { e.preventDefault(); enviarForm(e.target, '/focus/c
 document.querySelector('nav').onclick = e => { const b = e.target.closest('button'); if (b) { vista = b.dataset.v; window.scrollTo(0, 0); pintar(); } };
 $('fechas').onclick = e => { const b = e.target.closest('button'); if (b) { fechaSel = b.dataset.f; pintar(); } };
 
-// Marcar: se ve al instante y se guarda en segundo plano; si falla, se deshace.
-let cola = Promise.resolve();
+// Marcar = hacer la foto en ese momento. Se reduce en el móvil y se sube al servidor.
+let pendiente = null;
 $('habs').onclick = e => {
-  const b = e.target.closest('.hab'); if (!b || !fechaSel) return;
-  const id = yo().id, f = fechaSel; reto.marcas[id] ||= {};
-  const antes = [...(reto.marcas[id][f] || [])];
-  const ahora = antes.includes(b.dataset.h) ? antes.filter(x => x !== b.dataset.h) : [...antes, b.dataset.h];
-  reto.marcas[id][f] = ahora; pintar();
-  if (ahora.length === reto.habitos.length && navigator.vibrate) navigator.vibrate([30, 40, 30]);
-  if (ahora.length === reto.habitos.length) toast('🔥 ¡Día perfecto! +1 casilla extra');
-  enviando = true;
-  cola = cola.then(() => api('/focus/marcar', {code: mem.activo, id, token: yo().token, fecha: f, habitos: reto.marcas[id][f] || []}))
-    .then(r => { if (r.reto) aplicar(r.reto); })
-    .catch(err => { reto.marcas[id][f] = antes; pintar(); toast(err.message); })
-    .finally(() => { enviando = false; });
+  const b = e.target.closest('.hab'); if (!b || !fechaSel || subiendo) return;
+  const h = b.dataset.h, mias = (reto.marcas[yo().id] || {})[fechaSel] || [];
+  if (mias.includes(h)) return verFoto(yo().id, fechaSel, h);
+  pendiente = {h, f: fechaSel}; $('camara').value = ''; $('camara').click();
+};
+function comprimir(file) {
+  return new Promise((ok, mal) => {
+    const img = new Image(), u = URL.createObjectURL(file);
+    img.onload = () => {
+      const k = Math.min(1, 1080 / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(u);
+      let q = .72, d = c.toDataURL('image/jpeg', q);
+      while (d.length > 900000 && q > .35) { q -= .12; d = c.toDataURL('image/jpeg', q); }
+      ok(d);
+    };
+    img.onerror = () => { URL.revokeObjectURL(u); mal(new Error('No se pudo leer la foto.')); };
+    img.src = u;
+  });
+}
+$('camara').onchange = async () => {
+  const file = $('camara').files[0], p = pendiente; pendiente = null;
+  if (!file || !p) return;
+  subiendo = p.f + p.h; enviando = true; pintar();
+  try {
+    const foto = await comprimir(file);
+    const r = await api('/focus/cumplir', {code: mem.activo, id: yo().id, token: yo().token, fecha: p.f, habito: p.h, foto});
+    subiendo = null; aplicar(r.reto);
+    const n = (reto.marcas[yo().id]?.[p.f] || []).length;
+    if (n === reto.habitos.length) { toast('🔥 ¡Día perfecto! +1 casilla extra'); navigator.vibrate?.([30, 40, 30]); }
+    else toast('✓ Hábito cumplido');
+  } catch (err) { toast(err.message); }
+  finally { subiendo = null; enviando = false; pintar(); }
+};
+function verFoto(id, f, h) {
+  const m = reto.miembros[id], hb = reto.habitos.find(x => x.id === h), url = fotoUrl(id, f, h);
+  $('mTit').textContent = `${m.emoji} ${m.nombre} · ${hb.emoji} ${hb.nombre}`;
+  $('mSub').textContent = `${f === hoyRef() ? 'Hoy' : corta(f)}${reto.fotos?.[id]?.[f]?.[h] ? ' a las ' + hora(reto.fotos[id][f][h]) : ''}`;
+  $('mImg').classList.toggle('hidden', !url); if (url) $('mImg').src = url;
+  const mio = id === yo().id && [hoyRef(), sumaDias(hoyRef(), -1)].includes(f);
+  $('mQuitar').classList.toggle('hidden', !mio); $('mQuitar').dataset.k = mio ? f + '|' + h : ''; $('mQuitar').dataset.ok = ''; $('mQuitar').textContent = 'Quitar marca';
+  $('modal').classList.remove('hidden');
+}
+document.addEventListener('click', e => { const v = e.target.closest('[data-ver]'); if (v) { const [id, f, h] = v.dataset.ver.split('|'); verFoto(id, f, h); } });
+$('mCerrar').onclick = () => { $('modal').classList.add('hidden'); $('mImg').removeAttribute('src'); };
+$('modal').onclick = e => { if (e.target.id === 'modal') $('mCerrar').onclick(); };
+$('mQuitar').onclick = async () => {
+  const b = $('mQuitar'); if (b.dataset.ok !== '1') { b.dataset.ok = '1'; b.textContent = '¿Seguro? Pulsa otra vez'; return; }
+  const [f, h] = b.dataset.k.split('|');
+  try { const r = await api('/focus/desmarcar', {code: mem.activo, id: yo().id, token: yo().token, fecha: f, habito: h}); $('mCerrar').onclick(); aplicar(r.reto); }
+  catch (err) { toast(err.message); }
+};
+
+// ---------- avisos (notificaciones push) ----------
+const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const pushPosible = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+function pintarAvisos() {
+  const act = !!yo().avisos;
+  let t;
+  if (act && window.Notification?.permission === 'granted') t = 'Activados en este móvil. Te llegará un aviso cuando alguien cumpla un hábito.';
+  else if (!pushPosible()) t = /iPhone|iPad/.test(navigator.userAgent) && !standalone() ? 'En iPhone, primero añade Focus a la pantalla de inicio (Compartir → Añadir a pantalla de inicio) y ábrela desde el icono. Después actívalos aquí.' : 'Este navegador no permite avisos.';
+  else if (Notification.permission === 'denied') t = 'Los avisos están bloqueados. Actívalos en Ajustes del móvil → Notificaciones → Focus.';
+  else t = 'Recibe un aviso cada vez que alguien del grupo cumple un hábito.';
+  $('avTxt').textContent = t;
+  $('bActivar').classList.toggle('hidden', act || !pushPosible());
+  $('bProbar').classList.toggle('hidden', !act); $('bDesactivar').classList.toggle('hidden', !act);
+}
+async function activarAvisos(btn) {
+  if (!pushPosible()) { vista = 'vReto'; pintar(); return; }
+  btn.disabled = true;
+  try {
+    if (await Notification.requestPermission() !== 'granted') throw new Error('No has dado permiso para los avisos.');
+    const reg = await navigator.serviceWorker.ready;
+    const {publicKey} = await api('/focus/vapid');
+    const raw = Uint8Array.from(atob(publicKey.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - publicKey.length % 4) % 4)), c => c.charCodeAt(0));
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) sub = await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: raw});
+    await api('/focus/avisos', {code: mem.activo, id: yo().id, token: yo().token, activar: true, sub: sub.toJSON()});
+    mem.retos[mem.activo].avisos = true; guardarMem(); toast('🔔 Avisos activados');
+  } catch (err) { toast(err.message || 'No se pudieron activar los avisos'); }
+  finally { btn.disabled = false; pintar(); }
+}
+$('bActivar').onclick = () => activarAvisos($('bActivar'));
+$('bActivarB').onclick = () => activarAvisos($('bActivarB'));
+$('bProbar').onclick = async () => { try { const r = await api('/focus/probar-aviso', {code: mem.activo, id: yo().id, token: yo().token}); toast(r.ok ? 'Aviso enviado: debería llegarte ahora' : 'No se pudo enviar el aviso'); } catch (err) { toast(err.message); } };
+$('bDesactivar').onclick = async () => {
+  try { const reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription();
+    await api('/focus/avisos', {code: mem.activo, id: yo().id, token: yo().token, activar: false, sub: sub ? sub.toJSON() : null});
+    mem.retos[mem.activo].avisos = false; guardarMem(); pintar(); toast('Avisos desactivados'); }
+  catch (err) { toast(err.message); }
 };
 
 $('bInvitar').onclick = async () => {
