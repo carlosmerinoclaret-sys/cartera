@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Focus">
+<meta name="theme-color" content="#0e1014">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Focus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&display=swap">
+<style>
+:root{--bg:#0e1014;--card:#171a21;--card2:#1f232c;--line:#2a2f3a;--ink:#f3f5f7;--mute:#8d95a5;--lime:#c6ff3d;--coral:#ff6b4a;--r:18px;
+  --top:env(safe-area-inset-top,0px);--bot:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;min-width:0;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font:16px/1.45 Archivo,system-ui,-apple-system,sans-serif;overflow-x:hidden;padding-bottom:calc(84px + var(--bot))}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+.hidden{display:none!important}
+header{padding:calc(var(--top) + 18px) 20px 6px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+header h1{margin:0;font-size:30px;font-weight:900;letter-spacing:-.02em;line-height:1.05}
+header .sub{color:var(--mute);font-size:14px;margin-top:4px}
+.dia{font-weight:900;font-size:14px;background:var(--lime);color:#0e1014;border-radius:99px;padding:6px 12px;white-space:nowrap}
+main{padding:8px 16px 24px;max-width:640px;margin:0 auto}
+.card{background:var(--card);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.card h2{margin:0 0 12px;font-size:18px;font-weight:700}
+.muted{color:var(--mute);font-size:14px}
+.bar{height:10px;background:var(--card2);border-radius:99px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--lime);border-radius:99px;transition:width .4s}
+/* Hoy */
+.fechas{display:flex;gap:8px;margin-bottom:12px}
+.fechas button{flex:1;padding:10px;border-radius:12px;background:var(--card2);font-weight:700;color:var(--mute);min-height:44px}
+.fechas button.on{background:var(--ink);color:var(--bg)}
+.habs{display:grid;gap:10px}
+.hab{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:16px;background:var(--card2);min-height:64px;text-align:left;width:100%;transition:transform .12s,background .2s}
+.hab:active{transform:scale(.98)}
+.hab .e{font-size:28px;width:36px;text-align:center}
+.hab .n{flex:1;font-weight:700;font-size:18px}
+.hab .ck{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-weight:900}
+.hab.on{background:var(--lime);color:#0e1014}
+.hab.on .ck{border-color:#0e1014;background:#0e1014;color:var(--lime)}
+.resumen{display:flex;justify-content:space-between;align-items:center;margin:14px 2px 0;font-weight:700}
+.big{font-size:40px;font-weight:900;line-height:1}
+/* grupo hoy */
+.fila{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.fila:first-of-type{border-top:0}
+.av{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:20px;flex:none;box-shadow:inset 0 0 0 3px var(--c,#fff)}
+.fila .nm{flex:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dots{display:flex;gap:5px}
+.dots i{width:22px;height:22px;border-radius:7px;background:var(--card2);font-style:normal;font-size:12px;display:grid;place-items:center}
+.dots i.on{background:var(--lime)}
+.yo{font-size:12px;color:var(--mute);font-weight:500}
+/* casillero */
+.tablero{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px}
+.cas{aspect-ratio:1;border-radius:7px;background:var(--card2);position:relative;display:grid;place-items:center;font-size:10px;color:var(--mute)}
+.cas.hito{background:#262b36;color:var(--ink);font-weight:700}
+.cas.meta{background:var(--lime);color:#0e1014;font-weight:900;font-size:14px}
+.cas.salida{background:var(--ink);color:var(--bg);font-weight:900;font-size:13px}
+.cas .fichas{position:absolute;inset:0;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:1px}
+.ficha{width:clamp(16px,6vw,26px);height:clamp(16px,6vw,26px);border-radius:50%;background:var(--bg);display:grid;place-items:center;font-size:clamp(10px,3.4vw,15px);box-shadow:0 0 0 2px var(--c),0 3px 6px #0008;z-index:2;animation:pop .5s}
+@keyframes pop{from{transform:scale(.4)}to{transform:scale(1)}}
+.rank .pos{width:26px;font-weight:900;color:var(--mute);text-align:center}
+.rank .pts{font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ganador{background:linear-gradient(135deg,#c6ff3d,#7fd400);color:#0e1014;border-radius:var(--r);padding:16px;margin-bottom:14px;font-weight:900;font-size:18px}
+/* grupo tabla */
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:separate;border-spacing:3px;font-size:12px}
+th{color:var(--mute);font-weight:500;padding:2px}
+td.n{position:sticky;left:0;background:var(--card);padding-right:8px;font-weight:700;white-space:nowrap;font-size:14px}
+td.c{width:26px;height:26px;min-width:26px;border-radius:6px;text-align:center;font-weight:700;color:#0e1014}
+td.hoy{outline:2px solid var(--ink)}
+.leyenda{display:flex;gap:6px;align-items:center;margin-top:10px;font-size:12px;color:var(--mute)}
+.leyenda i{width:14px;height:14px;border-radius:4px;display:inline-block}
+.stat{display:flex;align-items:center;gap:10px;margin:8px 0}
+.stat span:first-child{width:120px;font-size:14px}
+.stat .bar{flex:1}
+.stat b{width:44px;text-align:right;font-variant-numeric:tabular-nums}
+/* formularios */
+label{display:block;font-size:14px;color:var(--mute);margin:12px 0 6px}
+input,select{width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card2);font-size:16px;outline:none}
+input:focus,select:focus{border-color:var(--lime)}
+.btn{display:block;width:100%;padding:15px;border-radius:14px;background:var(--lime);color:#0e1014;font-weight:900;font-size:17px;margin-top:16px;min-height:50px}
+.btn.sec{background:var(--card2);color:var(--ink)}
+.btn.peligro{background:transparent;color:var(--coral);border:1px solid #ff6b4a55}
+.btn:disabled{opacity:.5}
+.emojis{display:flex;flex-wrap:wrap;gap:8px}
+.emojis button{width:44px;height:44px;border-radius:12px;background:var(--card2);font-size:22px}
+.emojis button.on{background:var(--lime)}
+.tabs2{display:flex;background:var(--card2);border-radius:14px;padding:4px;margin-bottom:6px}
+.tabs2 button{flex:1;padding:10px;border-radius:10px;font-weight:700;color:var(--mute);min-height:44px}
+.tabs2 button.on{background:var(--ink);color:var(--bg)}
+.codigo{font-size:40px;font-weight:900;letter-spacing:.12em;text-align:center;margin:6px 0}
+.hero{padding:calc(var(--top) + 40px) 20px 10px;max-width:640px;margin:0 auto}
+.hero h1{font-size:46px;font-weight:900;margin:0;line-height:1;letter-spacing:-.03em}
+.hero h1 em{font-style:normal;color:var(--lime)}
+.hero p{color:var(--mute);margin:12px 0 0;font-size:17px}
+/* nav */
+nav{position:fixed;left:0;right:0;bottom:0;background:#0e1014ee;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);display:flex;padding:6px 6px calc(6px + var(--bot))}
+nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;color:var(--mute);font-size:12px;font-weight:700;min-height:52px}
+nav button b{font-size:22px;line-height:1.1}
+nav button.on{color:var(--lime)}
+.toast{position:fixed;left:50%;bottom:calc(96px + var(--bot));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:14px;font-weight:700;z-index:50;max-width:90vw;text-align:center;box-shadow:0 8px 24px #0008}
+.aviso{background:#ff6b4a22;color:#ffb8a6;border-radius:12px;padding:10px 12px;font-size:14px;margin-bottom:12px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- Bienvenida -->
+<section id="inicio" class="hidden">
+  <div class="hero">
+    <h1>Focus.<br><em>A tope</em>, juntos.</h1>
+    <p>Marca tus hábitos cada día, mira lo que hacen tus amigos y avanza en el casillero. El primero en llegar a la meta gana.</p>
+  </div>
+  <main>
+    <div class="card hidden" id="misRetos"><h2>Mis retos</h2><div id="listaRetos"></div></div>
+    <div class="tabs2"><button id="tUnirse" class="on">Unirme a un reto</button><button id="tCrear">Crear reto</button></div>
+    <form class="card" id="fUnirse">
+      <label for="uCode">Código del reto</label>
+      <input id="uCode" autocapitalize="characters" autocomplete="off" maxlength="6" placeholder="Ej. K7P2QM" required>
+      <label for="uNombre">Tu nombre</label>
+      <input id="uNombre" maxlength="20" autocomplete="nickname" required>
+      <label>Tu ficha</label>
+      <div class="emojis" data-for="u"></div>
+      <button class="btn" type="submit">Unirme</button>
+    </form>
+    <form class="card hidden" id="fCrear">
+      <label for="cReto">Nombre del reto</label>
+      <input id="cReto" maxlength="40" value="Focus 3 semanas">
+      <label for="cNombre">Tu nombre</label>
+      <input id="cNombre" maxlength="20" autocomplete="nickname" required>
+      <label>Tu ficha</label>
+      <div class="emojis" data-for="c"></div>
+      <label for="cInicio">Empieza el</label>
+      <input id="cInicio" type="date" required>
+      <label for="cDias">Duración</label>
+      <select id="cDias"><option value="7">1 semana</option><option value="14">2 semanas</option><option value="21" selected>3 semanas</option><option value="28">4 semanas</option></select>
+      <p class="muted">Hábitos: gimnasio, deporte, estudio, comida sana y 0 alcohol. Cada hábito cumplido es una casilla; el día perfecto (los 5) suma una casilla extra.</p>
+      <button class="btn" type="submit">Crear reto</button>
+    </form>
+  </main>
+</section>
+
+<!-- App -->
+<section id="app" class="hidden">
+  <header><div><h1 id="hTitulo">Focus</h1><div class="sub" id="hSub"></div></div><div class="dia" id="hDia"></div></header>
+  <main>
+    <div id="vHoy">
+      <div class="aviso hidden" id="avisoHoy"></div>
+      <div class="card">
+        <div class="fechas" id="fechas"></div>
+        <div class="habs" id="habs"></div>
+        <div class="resumen"><span id="resTxt"></span><span class="big" id="resNum"></span></div>
+      </div>
+      <div class="card"><h2>El grupo hoy</h2><div id="grupoHoy"></div></div>
+    </div>
+    <div id="vTablero" class="hidden">
+      <div id="ganador"></div>
+      <div class="card"><h2>Casillero</h2><div class="tablero" id="tablero"></div><p class="muted" style="margin:12px 0 0">Cada hábito = 1 casilla · Día perfecto = +1 extra · Meta en la casilla <b id="metaTxt"></b></p></div>
+      <div class="card rank"><h2>Clasificación</h2><div id="ranking"></div></div>
+    </div>
+    <div id="vGrupo" class="hidden">
+      <div class="card"><h2>Día a día</h2><div class="scroll"><table id="tabla"></table></div>
+        <div class="leyenda">0 <i style="background:#1f232c"></i><i style="background:#3d4a1e"></i><i style="background:#6b8f1f"></i><i style="background:#98c92a"></i><i style="background:#c6ff3d"></i> 5 hábitos</div></div>
+      <div class="card"><h2>Cumplimiento del grupo</h2><div id="stats"></div></div>
+    </div>
+    <div id="vReto" class="hidden">
+      <div class="card" style="text-align:center"><div class="muted">Código para invitar</div><div class="codigo" id="rCode"></div>
+        <button class="btn" id="bInvitar">Invitar amigos</button><p class="muted" id="rLink" style="word-break:break-all;margin-bottom:0"></p></div>
+      <div class="card"><h2>Miembros</h2><div id="rMiembros"></div></div>
+      <form class="card hidden" id="fAjustes"><h2>Ajustes del reto</h2>
+        <label for="aReto">Nombre</label><input id="aReto" maxlength="40">
+        <label for="aInicio">Empieza el</label><input id="aInicio" type="date">
+        <label for="aDias">Días</label><input id="aDias" type="number" min="3" max="60" inputmode="numeric">
+        <label for="aMeta">Meta (casillas)</label><input id="aMeta" type="number" min="10" inputmode="numeric">
+        <button class="btn" type="submit">Guardar cambios</button></form>
+      <div class="card"><button class="btn sec" id="bOtro" style="margin-top:0">Unirme a otro reto o crear uno</button>
+        <button class="btn peligro" id="bSalir">Salir de este reto</button></div>
+    </div>
+  </main>
+  <nav>
+    <button data-v="vHoy" class="on"><b>✓</b>Hoy</button>
+    <button data-v="vTablero"><b>🏁</b>Casillero</button>
+    <button data-v="vGrupo"><b>👥</b>Grupo</button>
+    <button data-v="vReto"><b>⚙︎</b>Reto</button>
+  </nav>
+</section>
+
+<div class="toast hidden" id="toast"></div>
+
+<script>
+{
+const SERVER = 'https://cartera.carlosmerinoclaret.workers.dev';
+const EMOJIS = ['🔥','💪','⚡','🦁','🐺','🦅','🚀','👑','🐉','🦈','🥷','⭐'];
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const hoyLocal = () => new Intl.DateTimeFormat('en-CA', {timeZone: 'Europe/Madrid'}).format(new Date());
+const sumaDias = (f, n) => { const d = new Date(f + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const difDias = (a, b) => Math.round((new Date(b + 'T12:00:00Z') - new Date(a + 'T12:00:00Z')) / 864e5);
+const corta = f => new Date(f + 'T12:00:00Z').toLocaleDateString('es-ES', {day: 'numeric', month: 'short', timeZone: 'UTC'});
+
+// Estado guardado en el móvil: qué retos tienes y tu identificación en cada uno.
+let mem = {activo: null, retos: {}};
+try { mem = JSON.parse(localStorage.getItem('focus') || '') || mem; } catch {}
+const guardarMem = () => { try { localStorage.setItem('focus', JSON.stringify(mem)); } catch {} };
+let reto = null, vista = 'vHoy', fechaSel = null, enviando = false;
+try { reto = JSON.parse(localStorage.getItem('focus-cache') || 'null'); } catch {}
+if (reto && reto.code !== mem.activo) reto = null;
+
+function toast(t) { const el = $('toast'); el.textContent = t; el.classList.remove('hidden'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.add('hidden'), 2600); }
+
+async function api(ruta, body) {
+  let r;
+  try { r = await fetch(SERVER + ruta, body ? {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)} : {cache: 'no-store'}); }
+  catch { throw new Error('Sin conexión. Inténtalo de nuevo.'); }
+  let j = {}; try { j = await r.json(); } catch {}
+  if (!r.ok) throw Object.assign(new Error(j.error || 'Error ' + r.status), {status: r.status});
+  return j;
+}
+const yo = () => mem.retos[mem.activo] || {};
+
+// ---------- cálculo de casillas ----------
+function casillasDia(lista) { const n = (lista || []).length; return n + (reto && n === reto.habitos.length ? 1 : 0); }
+function resumen(id) {
+  const m = reto.marcas[id] || {}; let total = 0, perfectos = 0, alcanzado = null;
+  for (let i = 0; i < reto.dias; i++) {
+    const f = sumaDias(reto.inicio, i), l = m[f] || [];
+    total += casillasDia(l); if (l.length === reto.habitos.length) perfectos++;
+    if (alcanzado === null && total >= reto.meta) alcanzado = f;
+  }
+  // racha de días perfectos hasta hoy (si hoy aún no está completo, cuenta desde ayer)
+  let racha = 0, f = hoyRef();
+  if ((m[f] || []).length !== reto.habitos.length) f = sumaDias(f, -1);
+  while (f >= reto.inicio && (m[f] || []).length === reto.habitos.length) { racha++; f = sumaDias(f, -1); }
+  return {total, perfectos, alcanzado, racha};
+}
+const hoyRef = () => reto.hoy && reto.hoy > hoyLocal() ? reto.hoy : hoyLocal();
+const miembrosOrden = () => Object.entries(reto.miembros).map(([id, m]) => ({id, ...m, ...resumen(id)}))
+  .sort((a, b) => (a.alcanzado && b.alcanzado ? a.alcanzado.localeCompare(b.alcanzado) : 0) || b.total - a.total || b.perfectos - a.perfectos);
+
+// ---------- pintar ----------
+function pintar() {
+  const hay = reto && mem.activo && mem.retos[mem.activo];
+  $('inicio').classList.toggle('hidden', !!hay);
+  $('app').classList.toggle('hidden', !hay);
+  if (!hay) return pintarInicio();
+  const hoy = hoyRef(), n = difDias(reto.inicio, hoy) + 1, fin = sumaDias(reto.inicio, reto.dias - 1);
+  $('hTitulo').textContent = reto.nombre;
+  $('hSub').textContent = `${corta(reto.inicio)} – ${corta(fin)} · ${Object.keys(reto.miembros).length} en el reto`;
+  $('hDia').textContent = n < 1 ? `Empieza en ${1 - n} d` : n > reto.dias ? 'Terminado' : `Día ${n}/${reto.dias}`;
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.v === vista));
+  ['vHoy', 'vTablero', 'vGrupo', 'vReto'].forEach(v => $(v).classList.toggle('hidden', v !== vista));
+  ({vHoy: pintarHoy, vTablero: pintarTablero, vGrupo: pintarGrupo, vReto: pintarReto})[vista]();
+}
+
+function pintarHoy() {
+  const hoy = hoyRef(), fin = sumaDias(reto.inicio, reto.dias - 1), ayer = sumaDias(hoy, -1);
+  const opciones = [ayer, hoy].filter(f => f >= reto.inicio && f <= fin);
+  if (!opciones.includes(fechaSel)) fechaSel = opciones[opciones.length - 1] || null;
+  const aviso = $('avisoHoy');
+  if (!fechaSel) {
+    aviso.classList.remove('hidden');
+    aviso.textContent = hoy < reto.inicio ? `El reto empieza el ${corta(reto.inicio)}. ¡Prepárate!` : 'El reto ha terminado. Mira el casillero para ver quién ganó.';
+  } else aviso.classList.add('hidden');
+  $('fechas').innerHTML = opciones.map(f => `<button data-f="${f}" class="${f === fechaSel ? 'on' : ''}">${f === hoy ? 'Hoy' : 'Ayer'} · ${corta(f)}</button>`).join('');
+  const mias = (reto.marcas[yo().id] || {})[fechaSel] || [];
+  $('habs').innerHTML = reto.habitos.map(h => `<button class="hab ${mias.includes(h.id) ? 'on' : ''}" data-h="${h.id}" ${fechaSel ? '' : 'disabled'}>
+    <span class="e">${esc(h.emoji)}</span><span class="n">${esc(h.nombre)}</span><span class="ck">${mias.includes(h.id) ? '✓' : ''}</span></button>`).join('');
+  const k = mias.length, t = reto.habitos.length;
+  $('resTxt').textContent = k === t ? '¡Día perfecto! +1 casilla extra' : `${t - k} por cumplir`;
+  $('resNum').textContent = `${k}/${t}`;
+  const dia = hoy >= reto.inicio && hoy <= fin ? hoy : fechaSel;
+  $('grupoHoy').innerHTML = miembrosOrden().map(m => {
+    const l = (reto.marcas[m.id] || {})[dia] || [];
+    return `<div class="fila"><span class="av" style="--c:${esc(m.color)}">${esc(m.emoji)}</span>
+      <span class="nm">${esc(m.nombre)} ${m.id === yo().id ? '<span class="yo">(tú)</span>' : ''}</span>
+      <span class="dots">${reto.habitos.map(h => `<i class="${l.includes(h.id) ? 'on' : ''}">${l.includes(h.id) ? esc(h.emoji) : ''}</i>`).join('')}</span></div>`;
+  }).join('') || '<p class="muted">Aún no hay nadie.</p>';
+}
+
+function pintarTablero() {
+  const ms = miembrosOrden(), meta = reto.meta;
+  $('metaTxt').textContent = meta;
+  const pos = {}; ms.forEach(m => { const p = Math.min(m.total, meta); (pos[p] ||= []).push(m); });
+  // casillas 0..meta en zigzag de 10 por fila
+  const filas = Math.ceil((meta + 1) / 10); let html = '';
+  for (let r = 0; r < filas; r++) for (let c = 0; c < 10; c++) {
+    const i = r * 10 + (r % 2 ? 9 - c : c);
+    if (i > meta) { html += '<div></div>'; continue; }
+    const cls = i === 0 ? 'salida' : i === meta ? 'meta' : i % 10 === 0 ? 'hito' : '';
+    const etq = i === 0 ? '▶' : i === meta ? '🏁' : i % 10 === 0 ? i : '';
+    const f = (pos[i] || []).map(m => `<span class="ficha" style="--c:${esc(m.color)}" title="${esc(m.nombre)}">${esc(m.emoji)}</span>`).join('');
+    html += `<div class="cas ${cls}">${f ? `<div class="fichas">${f}</div>` : etq}</div>`;
+  }
+  $('tablero').innerHTML = html;
+  const g = ms.filter(m => m.alcanzado);
+  $('ganador').innerHTML = g.length ? `<div class="ganador">🏆 ${esc(g[0].nombre)} ha llegado a la meta${g[0].alcanzado ? ' el ' + corta(g[0].alcanzado) : ''}</div>` : '';
+  $('ranking').innerHTML = ms.map((m, i) => `<div class="fila"><span class="pos">${i + 1}</span><span class="av" style="--c:${esc(m.color)}">${esc(m.emoji)}</span>
+    <span class="nm">${esc(m.nombre)}<br><span class="yo">${m.perfectos} ${m.perfectos === 1 ? 'día perfecto' : 'días perfectos'}${m.racha > 1 ? ` · racha de ${m.racha} 🔥` : ''}${m.alcanzado ? '' : ` · a ${Math.max(0, meta - m.total)} de la meta`}</span></span>
+    <span class="pts">${m.total}</span></div>`).join('');
+}
+
+function pintarGrupo() {
+  const hoy = hoyRef(), ms = miembrosOrden(), cols = ['#1f232c', '#2e3618', '#3d4a1e', '#6b8f1f', '#98c92a', '#c6ff3d'];
+  let h = '<tr><th></th>' + Array.from({length: reto.dias}, (_, i) => `<th>${i + 1}</th>`).join('') + '</tr>';
+  for (const m of ms) {
+    h += `<tr><td class="n">${esc(m.emoji)} ${esc(m.nombre)}</td>`;
+    for (let i = 0; i < reto.dias; i++) {
+      const f = sumaDias(reto.inicio, i), k = ((reto.marcas[m.id] || {})[f] || []).length;
+      h += `<td class="c ${f === hoy ? 'hoy' : ''}" style="background:${f > hoy ? 'transparent' : cols[k]}">${f > hoy ? '' : k || ''}</td>`;
+    }
+    h += '</tr>';
+  }
+  $('tabla').innerHTML = h;
+  const transcurridos = Math.max(0, Math.min(reto.dias, difDias(reto.inicio, hoy) + 1)), personas = ms.length || 1;
+  $('stats').innerHTML = reto.habitos.map(hb => {
+    let si = 0; for (const m of ms) for (let i = 0; i < transcurridos; i++) if (((reto.marcas[m.id] || {})[sumaDias(reto.inicio, i)] || []).includes(hb.id)) si++;
+    const p = transcurridos ? Math.round(si / (transcurridos * personas) * 100) : 0;
+    return `<div class="stat"><span>${esc(hb.emoji)} ${esc(hb.nombre)}</span><div class="bar"><i style="width:${p}%"></i></div><b>${p}%</b></div>`;
+  }).join('');
+}
+
+function enlace() { return location.origin + location.pathname + '?c=' + reto.code; }
+function pintarReto() {
+  $('rCode').textContent = reto.code;
+  $('rLink').textContent = enlace();
+  const soyCreador = yo().id === reto.creador;
+  $('rMiembros').innerHTML = miembrosOrden().map(m => `<div class="fila"><span class="av" style="--c:${esc(m.color)}">${esc(m.emoji)}</span>
+    <span class="nm">${esc(m.nombre)} ${m.id === reto.creador ? '<span class="yo">· creador</span>' : ''} ${m.id === yo().id ? '<span class="yo">(tú)</span>' : ''}</span>
+    ${soyCreador && m.id !== reto.creador ? `<button class="yo" data-expulsar="${esc(m.id)}" style="color:var(--coral);min-height:44px">Quitar</button>` : ''}</div>`).join('');
+  $('fAjustes').classList.toggle('hidden', !soyCreador);
+  $('bSalir').classList.toggle('hidden', soyCreador);
+  if (soyCreador && document.activeElement?.closest('#fAjustes') == null) {
+    $('aReto').value = reto.nombre; $('aInicio').value = reto.inicio; $('aDias').value = reto.dias; $('aMeta').value = reto.meta;
+  }
+}
+
+function pintarInicio() {
+  document.querySelectorAll('.emojis').forEach(el => {
+    const sel = el.dataset.sel || EMOJIS[Math.floor(Math.random() * EMOJIS.length)]; el.dataset.sel = sel;
+    el.innerHTML = EMOJIS.map(e => `<button type="button" data-e="${e}" class="${e === sel ? 'on' : ''}">${e}</button>`).join('');
+  });
+  if (!$('cInicio').value) $('cInicio').value = hoyLocal();
+  const codes = Object.keys(mem.retos);
+  $('misRetos').classList.toggle('hidden', !codes.length);
+  $('listaRetos').innerHTML = codes.map(c => `<button class="btn sec" data-ir="${esc(c)}" style="margin-top:8px">Volver al reto ${esc(c)}</button>`).join('');
+  const c = new URLSearchParams(location.search).get('c');
+  if (c && !$('uCode').value) $('uCode').value = c.toUpperCase();
+}
+
+// ---------- datos ----------
+function aplicar(r) {
+  reto = r; try { localStorage.setItem('focus-cache', JSON.stringify(r)); } catch {}
+  if (mem.activo && !reto.miembros[yo().id]) { // te han quitado del reto
+    delete mem.retos[mem.activo]; mem.activo = Object.keys(mem.retos)[0] || null; guardarMem();
+    toast('Ya no estás en ese reto'); reto = null; if (mem.activo) cargar();
+  }
+  pintar();
+}
+async function cargar() {
+  if (!mem.activo) return pintar();
+  try { aplicar(await api('/focus?c=' + encodeURIComponent(mem.activo))); }
+  catch (e) {
+    if (e.status === 404) { delete mem.retos[mem.activo]; mem.activo = null; guardarMem(); reto = null; pintar(); toast('Ese reto ya no existe'); }
+    else if (!reto) toast(e.message); // con caché, seguimos mostrando lo último
+  }
+}
+function entrar(res) {
+  mem.retos[res.code] = {id: res.id, token: res.token}; mem.activo = res.code; guardarMem();
+  history.replaceState(null, '', location.pathname); vista = 'vHoy'; aplicar(res.reto);
+}
+
+// ---------- eventos ----------
+$('tUnirse').onclick = () => { $('tUnirse').classList.add('on'); $('tCrear').classList.remove('on'); $('fUnirse').classList.remove('hidden'); $('fCrear').classList.add('hidden'); };
+$('tCrear').onclick = () => { $('tCrear').classList.add('on'); $('tUnirse').classList.remove('on'); $('fCrear').classList.remove('hidden'); $('fUnirse').classList.add('hidden'); };
+document.addEventListener('click', e => {
+  const em = e.target.closest('.emojis button');
+  if (em) { const box = em.parentElement; box.dataset.sel = em.dataset.e; box.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === em)); }
+});
+async function enviarForm(form, ruta, datos) {
+  const b = form.querySelector('button[type=submit]'); b.disabled = true;
+  try { entrar(await api(ruta, datos)); } catch (e) { toast(e.message); } finally { b.disabled = false; }
+}
+$('fUnirse').onsubmit = e => { e.preventDefault(); enviarForm(e.target, '/focus/unirse', {code: $('uCode').value.trim(), nombre: $('uNombre').value, emoji: document.querySelector('[data-for=u]').dataset.sel}); };
+$('fCrear').onsubmit = e => { e.preventDefault(); enviarForm(e.target, '/focus/crear', {reto: $('cReto').value, nombre: $('cNombre').value, emoji: document.querySelector('[data-for=c]').dataset.sel, inicio: $('cInicio').value, dias: $('cDias').value}); };
+
+document.querySelector('nav').onclick = e => { const b = e.target.closest('button'); if (b) { vista = b.dataset.v; window.scrollTo(0, 0); pintar(); } };
+$('fechas').onclick = e => { const b = e.target.closest('button'); if (b) { fechaSel = b.dataset.f; pintar(); } };
+
+// Marcar: se ve al instante y se guarda en segundo plano; si falla, se deshace.
+let cola = Promise.resolve();
+$('habs').onclick = e => {
+  const b = e.target.closest('.hab'); if (!b || !fechaSel) return;
+  const id = yo().id, f = fechaSel; reto.marcas[id] ||= {};
+  const antes = [...(reto.marcas[id][f] || [])];
+  const ahora = antes.includes(b.dataset.h) ? antes.filter(x => x !== b.dataset.h) : [...antes, b.dataset.h];
+  reto.marcas[id][f] = ahora; pintar();
+  if (ahora.length === reto.habitos.length && navigator.vibrate) navigator.vibrate([30, 40, 30]);
+  if (ahora.length === reto.habitos.length) toast('🔥 ¡Día perfecto! +1 casilla extra');
+  enviando = true;
+  cola = cola.then(() => api('/focus/marcar', {code: mem.activo, id, token: yo().token, fecha: f, habitos: reto.marcas[id][f] || []}))
+    .then(r => { if (r.reto) aplicar(r.reto); })
+    .catch(err => { reto.marcas[id][f] = antes; pintar(); toast(err.message); })
+    .finally(() => { enviando = false; });
+};
+
+$('bInvitar').onclick = async () => {
+  const texto = `Únete a mi reto "${reto.nombre}" en Focus 💪 Código: ${reto.code}\n${enlace()}`;
+  try { if (navigator.share) { await navigator.share({title: 'Focus', text: texto}); return; } } catch (e) { if (e.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(texto); toast('Invitación copiada: pégala en WhatsApp'); } catch { toast('Copia el enlace de debajo'); }
+};
+$('fAjustes').onsubmit = async e => {
+  e.preventDefault(); const b = e.target.querySelector('button'); b.disabled = true;
+  try { const r = await api('/focus/ajustes', {code: mem.activo, ...yo(), reto: $('aReto').value, inicio: $('aInicio').value, dias: $('aDias').value, meta: $('aMeta').value}); document.activeElement?.blur(); aplicar(r.reto); toast('Guardado'); }
+  catch (err) { toast(err.message); } finally { b.disabled = false; }
+};
+$('rMiembros').onclick = async e => {
+  const b = e.target.closest('[data-expulsar]'); if (!b) return;
+  if (b.dataset.ok !== '1') { b.dataset.ok = '1'; b.textContent = '¿Seguro?'; return; }
+  try { const r = await api('/focus/ajustes', {code: mem.activo, ...yo(), expulsar: b.dataset.expulsar}); aplicar(r.reto); } catch (err) { toast(err.message); }
+};
+$('bSalir').onclick = async e => {
+  const b = e.target; if (b.dataset.ok !== '1') { b.dataset.ok = '1'; b.textContent = 'Pulsa otra vez para salir (perderás tus marcas)'; return; }
+  try { await api('/focus/salir', {code: mem.activo, ...yo()}); delete mem.retos[mem.activo]; mem.activo = Object.keys(mem.retos)[0] || null; guardarMem(); reto = null; cargar(); pintar(); }
+  catch (err) { toast(err.message); }
+};
+$('listaRetos').onclick = e => { const b = e.target.closest('[data-ir]'); if (b) { mem.activo = b.dataset.ir; guardarMem(); reto = null; cargar(); } };
+$('bOtro').onclick = () => { mem.activo = null; reto = null; guardarMem(); pintar(); };
+
+// Actualización automática: cada 15 s con la app abierta y al volver a ella.
+setInterval(() => { if (!document.hidden && !enviando) cargar(); }, 15000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) cargar(); });
+
+// Si abres un enlace de invitación a otro reto teniendo ya uno, te deja unirte.
+const cUrl = new URLSearchParams(location.search).get('c');
+if (cUrl && !mem.retos[cUrl.toUpperCase()]) { mem.activo = null; reto = null; }
+else if (cUrl) { mem.activo = cUrl.toUpperCase(); guardarMem(); history.replaceState(null, '', location.pathname); }
+pintar(); cargar();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
