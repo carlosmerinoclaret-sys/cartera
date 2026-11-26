@@ -1,7 +1,7 @@
 // Worker de la app Cartera (Cloudflare Workers, plan gratuito).
 // 1) /api/...  → repetidor de precios de EODHD (añade CORS y, si existe, la clave EODHD_TOKEN).
 // 2) /sync     → guarda y lee tus datos (datos.json) en tu repositorio PRIVADO de GitHub.
-// 3) /focus    → app Focus: retos de hábitos con amigos (focus.json en el mismo repositorio privado).
+// 3) /focus    → app Operación Batman: retos de hábitos con amigos (base de datos D1 enlazada como DB).
 // Variables (Settings → Variables and Secrets): EODHD_TOKEN, SYNC_KEY, GITHUB_TOKEN, DATA_REPO (opcional).
 export default {
   async fetch(request, env, ctx) {
@@ -68,9 +68,9 @@ export default {
 // ───────────────────────── Focus ─────────────────────────
 // Retos de hábitos en grupo. Sin cuentas: cada reto tiene un código para unirse y
 // cada miembro recibe un token secreto (guardado en su móvil) para marcar solo lo suyo.
-// Cada hábito se marca con una foto hecha en el momento. Las fotos y los datos se guardan
-// en el repositorio privado de datos; los avisos van por Web Push con claves que el propio
-// Worker genera y guarda la primera vez (no hay que configurar nada).
+// Cada hábito se marca con una foto hecha en el momento. Todo se guarda en una base de datos
+// Cloudflare D1 enlazada al Worker con el nombre DB (gratis). Los avisos van por Web Push con
+// claves que el propio Worker genera y guarda en la base la primera vez.
 const HABITOS = [
   { id: 'gym', nombre: 'Gimnasio', emoji: '🏋️' },
   { id: 'deporte', nombre: 'Deporte', emoji: '⚽' },
@@ -135,62 +135,68 @@ async function enviarPush(sub, payload, vapid) {
   return r.status;
 }
 
-async function focus(request, env, url, json, ctx) {
-  const repo = `https://api.github.com/repos/${env.DATA_REPO || 'carlosmerinoclaret-sys/cartera-datos'}/contents/`;
-  const gh = { Authorization: `Bearer ${env.GITHUB_TOKEN}`, 'User-Agent': 'cartera-focus', Accept: 'application/vnd.github+json' };
-  const ghLeer = async (ruta) => {
-    const r = await fetch(repo + ruta, { headers: gh });
-    if (r.status === 404) return null;
-    if (!r.ok) throw ferr(502, 'No se pudo leer los datos (GitHub ' + r.status + ')');
-    return r.json();
-  };
-  const ghEscribir = (ruta, base64, s, msg) => fetch(repo + ruta, { method: 'PUT', headers: gh,
-    body: JSON.stringify({ message: msg || 'Focus', content: base64, ...(s ? { sha: s } : {}) }) });
-  const aB64 = o => btoa(unescape(encodeURIComponent(JSON.stringify(o))));
-  const deB64 = c => JSON.parse(decodeURIComponent(escape(atob(c.replace(/\n/g, '')))));
+let esquemaListo = false;
+async function esquema(db) {
+  if (esquemaListo) return;
+  await db.batch([
+    db.prepare('CREATE TABLE IF NOT EXISTS retos (code TEXT PRIMARY KEY, data TEXT NOT NULL)'),
+    db.prepare('CREATE TABLE IF NOT EXISTS miembros (code TEXT, id TEXT, nombre TEXT, emoji TEXT, color TEXT, unido TEXT, token TEXT, PRIMARY KEY (code, id))'),
+    db.prepare('CREATE TABLE IF NOT EXISTS marcas (code TEXT, id TEXT, fecha TEXT, habito TEXT, ts INTEGER, PRIMARY KEY (code, id, fecha, habito))'),
+    db.prepare('CREATE TABLE IF NOT EXISTS fotos (code TEXT, id TEXT, fecha TEXT, habito TEXT, img TEXT, PRIMARY KEY (code, id, fecha, habito))'),
+    db.prepare('CREATE TABLE IF NOT EXISTS subs (code TEXT, id TEXT, endpoint TEXT, p256dh TEXT, auth TEXT, ts INTEGER, PRIMARY KEY (code, endpoint))'),
+    db.prepare('CREATE TABLE IF NOT EXISTS config (k TEXT PRIMARY KEY, v TEXT)'),
+  ]);
+  esquemaListo = true;
+}
 
-  const leer = async () => {
-    const f = await ghLeer('focus.json');
-    return f ? { datos: deB64(f.content), sha: f.sha } : { datos: { retos: {} }, sha: null };
-  };
-  // Lee, aplica el cambio y guarda; si otro amigo guardó a la vez, lo reintenta.
-  const cambiar = async (fn) => {
-    for (let i = 0; i < 6; i++) {
-      const { datos, sha: s } = await leer();
-      datos.retos ||= {};
-      const resultado = await fn(datos);
-      const r = await ghEscribir('focus.json', aB64(datos), s);
-      if (r.ok) return resultado;
-      if (r.status !== 409 && r.status !== 422) throw ferr(502, 'No se pudo guardar (GitHub ' + r.status + ')');
-      await new Promise(ok => setTimeout(ok, 150 + Math.random() * 500));
+async function focus(request, env, url, json, ctx) {
+  const db = env.DB;
+  if (!db) throw ferr(500, 'Falta enlazar la base de datos (binding DB) al Worker.');
+  await esquema(db);
+  const q = (sql, ...a) => db.prepare(sql).bind(...a);
+
+  const leerReto = async (code) => {
+    const fila = await q('SELECT data FROM retos WHERE code = ?', code).first();
+    if (!fila) return null;
+    const r = JSON.parse(fila.data);
+    const ms = (await q('SELECT id, nombre, emoji, color, unido, token FROM miembros WHERE code = ? ORDER BY rowid', code).all()).results;
+    r.miembros = {}; r.tokens = {}; r.marcas = {}; r.fotos = {};
+    for (const m of ms) { r.miembros[m.id] = { nombre: m.nombre, emoji: m.emoji, color: m.color, unido: m.unido }; r.tokens[m.id] = m.token; r.marcas[m.id] = {}; }
+    const orden = HABITOS.map(h => h.id);
+    const mk = (await q('SELECT id, fecha, habito, ts FROM marcas WHERE code = ?', code).all()).results;
+    for (const m of mk) {
+      if (!r.marcas[m.id]) continue;
+      (r.marcas[m.id][m.fecha] ||= []).push(m.habito);
+      ((r.fotos[m.id] ||= {})[m.fecha] ||= {})[m.habito] = m.ts;
     }
-    throw ferr(409, 'Mucha gente guardando a la vez. Inténtalo de nuevo.');
+    for (const id in r.marcas) for (const f in r.marcas[id]) r.marcas[id][f].sort((a, b) => orden.indexOf(a) - orden.indexOf(b));
+    return r;
   };
-  // Claves de notificaciones: se crean solas la primera vez y se guardan en el repo privado.
+  const guardarDatos = (code, r) => q('UPDATE retos SET data = ? WHERE code = ?',
+    JSON.stringify({ nombre: r.nombre, creado: r.creado, inicio: r.inicio, dias: r.dias, meta: r.meta, habitos: r.habitos, creador: r.creador }), code).run();
+
+  // Claves de notificaciones: se crean solas la primera vez y se guardan en la base.
   const vapid = async () => {
-    const f = await ghLeer('focus-vapid.json');
-    if (f) return deB64(f.content);
+    const f = await q("SELECT v FROM config WHERE k = 'vapid'").first();
+    if (f) return JSON.parse(f.v);
     const k = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
     const v = { publicKey: b64u(await crypto.subtle.exportKey('raw', k.publicKey)), privateJwk: await crypto.subtle.exportKey('jwk', k.privateKey) };
-    const r = await ghEscribir('focus-vapid.json', aB64(v), null, 'Focus: claves de avisos');
-    if (r.ok) return v;
-    const g = await ghLeer('focus-vapid.json'); // otro lo creó a la vez
-    if (g) return deB64(g.content);
-    throw ferr(502, 'No se pudieron crear las claves de avisos');
+    await q("INSERT OR IGNORE INTO config (k, v) VALUES ('vapid', ?)", JSON.stringify(v)).run();
+    return JSON.parse((await q("SELECT v FROM config WHERE k = 'vapid'").first()).v); // por si otro la creó a la vez
   };
   // Avisa a todos los del reto menos al que ha marcado. Las suscripciones caducadas se borran.
   const avisar = (code, deId, titulo, cuerpo) => ctx?.waitUntil((async () => {
     try {
-      const { datos } = await leer();
-      const r = datos.retos?.[code]; if (!r?.subs) return;
-      const v = await vapid(), muertas = [];
+      const subs = (await q('SELECT endpoint, p256dh, auth FROM subs WHERE code = ? AND id != ?', code, deId).all()).results;
+      if (!subs.length) return;
+      const v = await vapid();
       const payload = JSON.stringify({ title: titulo, body: cuerpo, tag: code + deId, url: './' });
-      await Promise.all(Object.entries(r.subs).filter(([id]) => id !== deId).flatMap(([id, lista]) =>
-        lista.map(async s => { try { const st = await enviarPush(s, payload, v); if (st === 404 || st === 410) muertas.push(s.endpoint); } catch {} })));
-      if (muertas.length) await cambiar(async d => {
-        const rr = d.retos[code]; if (!rr?.subs) return;
-        for (const id in rr.subs) rr.subs[id] = rr.subs[id].filter(s => !muertas.includes(s.endpoint));
-      });
+      await Promise.all(subs.map(async s => {
+        try {
+          const st = await enviarPush({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, v);
+          if (st === 404 || st === 410) await q('DELETE FROM subs WHERE code = ? AND endpoint = ?', code, s.endpoint).run();
+        } catch {}
+      }));
     } catch {}
   })());
 
@@ -198,7 +204,7 @@ async function focus(request, env, url, json, ctx) {
     if (!r) throw ferr(404, 'Ese reto no existe. Revisa el código.');
     if (!id || !r.tokens?.[id] || r.tokens[id] !== await sha(String(token || ''))) throw ferr(403, 'Este móvil no está identificado en el reto.');
   };
-  const nuevoMiembro = async (r, body) => {
+  const nuevoMiembro = async (code, r, body) => {
     const nombre = texto(body.nombre, 20);
     if (!nombre) throw ferr(400, 'Escribe tu nombre.');
     const ids = Object.keys(r.miembros || {});
@@ -206,11 +212,9 @@ async function focus(request, env, url, json, ctx) {
     if (ids.some(k => r.miembros[k].nombre.toLowerCase() === nombre.toLowerCase())) throw ferr(400, 'Ya hay alguien con ese nombre en el reto.');
     const id = aleatorio(8, 'abcdefghijkmnpqrstuvwxyz23456789');
     const token = aleatorio(32, 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789');
-    r.miembros ||= {}; r.tokens ||= {}; r.marcas ||= {}; r.fotos ||= {};
-    r.miembros[id] = { nombre, emoji: texto(body.emoji, 4) || '🔥', color: COLORES[ids.length % COLORES.length], unido: hoyMadrid() };
-    r.tokens[id] = await sha(token);
-    r.marcas[id] = {};
-    return { id, token };
+    await q('INSERT INTO miembros (code, id, nombre, emoji, color, unido, token) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      code, id, nombre, texto(body.emoji, 4) || '🔥', COLORES[ids.length % COLORES.length], hoyMadrid(), await sha(token)).run();
+    return { id, token, nombre };
   };
   const fechaValida = (r, f) => {
     if (!esFecha(f)) throw ferr(400, 'Fecha no válida');
@@ -219,30 +223,24 @@ async function focus(request, env, url, json, ctx) {
     if (f > hoy) throw ferr(400, 'No puedes marcar días que aún no han llegado.');
     if (f < sumaDias(hoy, -1)) throw ferr(400, 'Solo puedes marcar hoy y ayer.');
   };
-  const rutaFoto = (code, id, f, h) => `focus-fotos/${code}/${id}/${f}_${h}.jpg`;
+  const borrarMiembro = (code, id) => db.batch(['miembros', 'marcas', 'fotos', 'subs'].map(t => q(`DELETE FROM ${t} WHERE code = ? AND id = ?`, code, id)));
 
   const ruta = url.pathname.replace(/\/+$/, '');
   if (request.method === 'GET' && ruta === '/focus') {
     const code = texto(url.searchParams.get('c'), 12).toUpperCase();
-    const { datos } = await leer();
-    const r = datos.retos?.[code];
+    const r = await leerReto(code);
     if (!r) throw ferr(404, 'Ese reto no existe. Revisa el código.');
     return json(vistaPublica(code, r));
   }
   if (request.method === 'GET' && ruta === '/focus/vapid') return json({ publicKey: (await vapid()).publicKey });
   if (request.method === 'GET' && ruta === '/focus/foto') {
-    // Sirve una foto del repo privado. La dirección incluye la versión, así que se guarda en caché.
     const code = texto(url.searchParams.get('c'), 12).toUpperCase(), id = url.searchParams.get('m') || '';
     const f = url.searchParams.get('f') || '', h = url.searchParams.get('h') || '';
     if (!/^[A-Z0-9]{4,12}$/.test(code) || !idOk(id) || !esFecha(f) || !HABITOS.some(x => x.id === h)) throw ferr(400, 'Foto no válida');
-    const cache = caches.default, clave = new Request(url.toString());
-    const guardada = await cache.match(clave);
-    if (guardada) return guardada;
-    const r = await fetch(repo + rutaFoto(code, id, f, h), { headers: { ...gh, Accept: 'application/vnd.github.raw' } });
-    if (!r.ok) throw ferr(404, 'Foto no encontrada');
-    const resp = new Response(r.body, { headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'public, max-age=31536000, immutable', 'Access-Control-Allow-Origin': '*' } });
-    ctx?.waitUntil(cache.put(clave, resp.clone()));
-    return resp;
+    const fila = await q('SELECT img FROM fotos WHERE code = ? AND id = ? AND fecha = ? AND habito = ?', code, id, f, h).first();
+    if (!fila) throw ferr(404, 'Foto no encontrada');
+    const bytes = Uint8Array.from(atob(fila.img), c => c.charCodeAt(0));
+    return new Response(bytes, { headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'public, max-age=31536000, immutable', 'Access-Control-Allow-Origin': '*' } });
   }
   if (request.method !== 'POST') throw ferr(405, 'Método no permitido');
   let body;
@@ -253,27 +251,22 @@ async function focus(request, env, url, json, ctx) {
   if (ruta === '/focus/crear') {
     const inicio = esFecha(body.inicio) ? body.inicio : hoyMadrid();
     const dias = Math.min(60, Math.max(3, parseInt(body.dias) || 21));
-    return json(await cambiar(async datos => {
-      let c; do { c = aleatorio(6, 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'); } while (datos.retos[c]);
-      const r = { nombre: texto(body.reto, 40) || 'Focus', creado: hoyMadrid(), inicio, dias,
-        meta: Math.min(dias * 6, Math.max(10, parseInt(body.meta) || Math.round(dias * 6 * 0.8 / 5) * 5)),
-        habitos: HABITOS, miembros: {}, tokens: {}, marcas: {}, fotos: {} };
-      const yo = await nuevoMiembro(r, body);
-      r.creador = yo.id;
-      datos.retos[c] = r;
-      return { code: c, ...yo, reto: vistaPublica(c, r) };
-    }));
+    let c;
+    for (let i = 0; i < 10; i++) { c = aleatorio(6, 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'); if (!(await q('SELECT 1 FROM retos WHERE code = ?', c).first())) break; }
+    const r = { nombre: texto(body.reto, 40) || 'Operación Batman', creado: hoyMadrid(), inicio, dias,
+      meta: Math.min(dias * 6, Math.max(10, parseInt(body.meta) || Math.round(dias * 6 * 0.8 / 5) * 5)), habitos: HABITOS, miembros: {} };
+    await q('INSERT INTO retos (code, data) VALUES (?, ?)', c, '{}').run();
+    const yo = await nuevoMiembro(c, r, body);
+    r.creador = yo.id;
+    await guardarDatos(c, r);
+    return json({ code: c, id: yo.id, token: yo.token, reto: vistaPublica(c, await leerReto(c)) });
   }
   if (ruta === '/focus/unirse') {
-    let nombre;
-    const res = await cambiar(async datos => {
-      const r = datos.retos[code];
-      if (!r) throw ferr(404, 'Ese reto no existe. Revisa el código.');
-      const yo = await nuevoMiembro(r, body); nombre = r.miembros[yo.id].nombre;
-      return { code, ...yo, reto: vistaPublica(code, r) };
-    });
-    avisar(code, res.id, 'Focus', `${nombre} se ha unido al reto 💪`);
-    return json(res);
+    const r = await leerReto(code);
+    if (!r) throw ferr(404, 'Ese reto no existe. Revisa el código.');
+    const yo = await nuevoMiembro(code, r, body);
+    avisar(code, yo.id, 'Operación Batman', `${yo.nombre} se ha unido al reto 💪`);
+    return json({ code, id: yo.id, token: yo.token, reto: vistaPublica(code, await leerReto(code)) });
   }
   if (ruta === '/focus/cumplir') {
     // Marca un hábito con su foto (JPEG en base64, ya reducida en el móvil).
@@ -281,89 +274,70 @@ async function focus(request, env, url, json, ctx) {
     if (!HABITOS.some(x => x.id === h)) throw ferr(400, 'Hábito no válido');
     const img = String(body.foto || '').replace(/^data:image\/\w+;base64,/, '');
     if (img.length < 2000) throw ferr(400, 'Falta la foto.');
-    if (img.length > 2_000_000) throw ferr(400, 'La foto es demasiado grande.');
+    if (img.length > 1_500_000) throw ferr(400, 'La foto es demasiado grande.');
     if (!/^[A-Za-z0-9+/=]+$/.test(img) || !img.startsWith('/9j/')) throw ferr(400, 'La foto debe ser un JPEG.');
-    const { datos } = await leer();
-    const r0 = datos.retos?.[code];
+    const r0 = await leerReto(code);
     await autorizar(r0, body.id, body.token);
     fechaValida(r0, body.fecha);
-    const rutaF = rutaFoto(code, body.id, body.fecha, h);
-    const previa = await ghLeer(rutaF).catch(() => null);
-    const w = await ghEscribir(rutaF, img, previa?.sha, 'Focus: foto');
-    if (!w.ok) throw ferr(502, 'No se pudo guardar la foto (GitHub ' + w.status + ')');
-    let info;
-    const res = await cambiar(async d => {
-      const r = d.retos[code];
-      await autorizar(r, body.id, body.token);
-      r.marcas[body.id] ||= {}; r.fotos ||= {}; r.fotos[body.id] ||= {};
-      const l = new Set(r.marcas[body.id][body.fecha] || []); l.add(h);
-      r.marcas[body.id][body.fecha] = HABITOS.map(x => x.id).filter(x => l.has(x));
-      (r.fotos[body.id][body.fecha] ||= {})[h] = Date.now();
-      info = { nombre: r.miembros[body.id].nombre, n: l.size, total: r.habitos.length };
-      return { ok: true, reto: vistaPublica(code, r) };
-    });
+    await db.batch([
+      q('INSERT OR REPLACE INTO fotos (code, id, fecha, habito, img) VALUES (?, ?, ?, ?, ?)', code, body.id, body.fecha, h, img),
+      q('INSERT OR REPLACE INTO marcas (code, id, fecha, habito, ts) VALUES (?, ?, ?, ?, ?)', code, body.id, body.fecha, h, Date.now()),
+    ]);
+    const r = await leerReto(code);
+    const n = (r.marcas[body.id]?.[body.fecha] || []).length, total = r.habitos.length, nombre = r.miembros[body.id].nombre;
     const hb = HABITOS.find(x => x.id === h);
-    if (body.fecha === hoyMadrid()) avisar(code, body.id, info.n === info.total ? `🔥 ${info.nombre}: ¡día perfecto!` : `${hb.emoji} ${info.nombre}`,
-      info.n === info.total ? `Ha cumplido los ${info.total} hábitos de hoy. +1 casilla extra.` : `Ha cumplido ${hb.nombre} (${info.n}/${info.total} hoy). ¿Y tú?`);
-    return json(res);
+    if (body.fecha === hoyMadrid()) avisar(code, body.id, n === total ? `🔥 ${nombre}: ¡día perfecto!` : `${hb.emoji} ${nombre}`,
+      n === total ? `Ha cumplido los ${total} hábitos de hoy. +1 casilla extra.` : `Ha cumplido ${hb.nombre} (${n}/${total} hoy). ¿Y tú?`);
+    return json({ ok: true, reto: vistaPublica(code, r) });
   }
   if (ruta === '/focus/desmarcar') {
-    return json(await cambiar(async datos => {
-      const r = datos.retos[code];
-      await autorizar(r, body.id, body.token);
-      fechaValida(r, body.fecha);
-      const l = (r.marcas[body.id]?.[body.fecha] || []).filter(x => x !== body.habito);
-      if (l.length) r.marcas[body.id][body.fecha] = l; else if (r.marcas[body.id]) delete r.marcas[body.id][body.fecha];
-      if (r.fotos?.[body.id]?.[body.fecha]) delete r.fotos[body.id][body.fecha][body.habito];
-      return { ok: true, reto: vistaPublica(code, r) };
-    }));
+    const r0 = await leerReto(code);
+    await autorizar(r0, body.id, body.token);
+    fechaValida(r0, body.fecha);
+    await db.batch(['marcas', 'fotos'].map(t => q(`DELETE FROM ${t} WHERE code = ? AND id = ? AND fecha = ? AND habito = ?`, code, body.id, body.fecha, String(body.habito || ''))));
+    return json({ ok: true, reto: vistaPublica(code, await leerReto(code)) });
   }
   if (ruta === '/focus/avisos') {
     // Guarda (o quita) la suscripción de avisos de este móvil. Máximo 3 dispositivos por persona.
+    const r = await leerReto(code);
+    await autorizar(r, body.id, body.token);
     const s = body.sub;
     const valida = s && typeof s.endpoint === 'string' && /^https:\/\//.test(s.endpoint) && s.keys?.p256dh && s.keys?.auth;
-    return json(await cambiar(async datos => {
-      const r = datos.retos[code];
-      await autorizar(r, body.id, body.token);
-      r.subs ||= {};
-      const lista = (r.subs[body.id] || []).filter(x => !s || x.endpoint !== s.endpoint);
-      if (body.activar && valida) lista.unshift({ endpoint: s.endpoint, keys: { p256dh: String(s.keys.p256dh), auth: String(s.keys.auth) } });
-      r.subs[body.id] = lista.slice(0, 3);
-      return { ok: true };
-    }));
+    if (s?.endpoint) await q('DELETE FROM subs WHERE code = ? AND endpoint = ?', code, String(s.endpoint)).run();
+    if (body.activar && valida) {
+      await q('INSERT INTO subs (code, id, endpoint, p256dh, auth, ts) VALUES (?, ?, ?, ?, ?, ?)', code, body.id, s.endpoint, String(s.keys.p256dh), String(s.keys.auth), Date.now()).run();
+      await q('DELETE FROM subs WHERE code = ? AND id = ? AND endpoint NOT IN (SELECT endpoint FROM subs WHERE code = ? AND id = ? ORDER BY ts DESC LIMIT 3)', code, body.id, code, body.id).run();
+    }
+    return json({ ok: true });
   }
   if (ruta === '/focus/probar-aviso') {
-    const { datos } = await leer();
-    const r = datos.retos?.[code];
+    const r = await leerReto(code);
     await autorizar(r, body.id, body.token);
-    const v = await vapid(), lista = r.subs?.[body.id] || [];
+    const lista = (await q('SELECT endpoint, p256dh, auth FROM subs WHERE code = ? AND id = ?', code, body.id).all()).results;
     if (!lista.length) throw ferr(400, 'Este móvil no tiene los avisos activados.');
-    const st = await Promise.all(lista.map(s => enviarPush(s, JSON.stringify({ title: 'Focus', body: '✅ Los avisos funcionan. ¡A tope!', url: './' }), v).catch(() => 0)));
+    const v = await vapid();
+    const st = await Promise.all(lista.map(s => enviarPush({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
+      JSON.stringify({ title: 'Operación Batman', body: '✅ Los avisos funcionan. ¡A tope!', url: './' }), v).catch(() => 0)));
     return json({ ok: st.some(x => x >= 200 && x < 300), estados: st });
   }
   if (ruta === '/focus/ajustes') {
-    return json(await cambiar(async datos => {
-      const r = datos.retos[code];
-      await autorizar(r, body.id, body.token);
-      if (body.id !== r.creador) throw ferr(403, 'Solo quien creó el reto puede cambiarlo.');
-      if (body.reto) r.nombre = texto(body.reto, 40) || r.nombre;
-      if (esFecha(body.inicio)) r.inicio = body.inicio;
-      if (body.dias) r.dias = Math.min(60, Math.max(3, parseInt(body.dias) || r.dias));
-      if (body.meta) r.meta = Math.min(r.dias * 6, Math.max(10, parseInt(body.meta) || r.meta));
-      if (body.expulsar && body.expulsar !== r.creador && r.miembros[body.expulsar]) {
-        for (const k of ['miembros', 'tokens', 'marcas', 'fotos', 'subs']) if (r[k]) delete r[k][body.expulsar];
-      }
-      return { ok: true, reto: vistaPublica(code, r) };
-    }));
+    const r = await leerReto(code);
+    await autorizar(r, body.id, body.token);
+    if (body.id !== r.creador) throw ferr(403, 'Solo quien creó el reto puede cambiarlo.');
+    if (body.reto) r.nombre = texto(body.reto, 40) || r.nombre;
+    if (esFecha(body.inicio)) r.inicio = body.inicio;
+    if (body.dias) r.dias = Math.min(60, Math.max(3, parseInt(body.dias) || r.dias));
+    if (body.meta) r.meta = Math.min(r.dias * 6, Math.max(10, parseInt(body.meta) || r.meta));
+    await guardarDatos(code, r);
+    if (body.expulsar && body.expulsar !== r.creador && r.miembros[body.expulsar]) await borrarMiembro(code, body.expulsar);
+    return json({ ok: true, reto: vistaPublica(code, await leerReto(code)) });
   }
   if (ruta === '/focus/salir') {
-    return json(await cambiar(async datos => {
-      const r = datos.retos[code];
-      await autorizar(r, body.id, body.token);
-      if (body.id === r.creador) throw ferr(400, 'Quien creó el reto no puede salir de él.');
-      for (const k of ['miembros', 'tokens', 'marcas', 'fotos', 'subs']) if (r[k]) delete r[k][body.id];
-      return { ok: true };
-    }));
+    const r = await leerReto(code);
+    await autorizar(r, body.id, body.token);
+    if (body.id === r.creador) throw ferr(400, 'Quien creó el reto no puede salir de él.');
+    await borrarMiembro(code, body.id);
+    return json({ ok: true });
   }
   throw ferr(404, 'Ruta no encontrada');
 }
