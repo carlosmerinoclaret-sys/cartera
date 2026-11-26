@@ -6,12 +6,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Focus">
+<meta name="apple-mobile-web-app-title" content="Op. Batman">
 <meta name="theme-color" content="#0e1014">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
-<title>Focus</title>
+<title>Operación Batman</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&display=swap">
 <style>
@@ -129,7 +129,7 @@ nav button.on{color:var(--lime)}
 <!-- Bienvenida -->
 <section id="inicio" class="hidden">
   <div class="hero">
-    <h1>Focus.<br><em>A tope</em>, juntos.</h1>
+    <h1>Operación<br><em>Batman</em>.</h1>
     <p>Marca tus hábitos cada día, mira lo que hacen tus amigos y avanza en el casillero. El primero en llegar a la meta gana.</p>
   </div>
   <main>
@@ -146,7 +146,7 @@ nav button.on{color:var(--lime)}
     </form>
     <form class="card hidden" id="fCrear">
       <label for="cReto">Nombre del reto</label>
-      <input id="cReto" maxlength="40" value="Focus 3 semanas">
+      <input id="cReto" maxlength="40" value="Operación Batman">
       <label for="cNombre">Tu nombre</label>
       <input id="cNombre" maxlength="20" autocomplete="nickname" required>
       <label>Tu ficha</label>
@@ -498,8 +498,8 @@ function pintarAvisos() {
   const act = !!yo().avisos;
   let t;
   if (act && window.Notification?.permission === 'granted') t = 'Activados en este móvil. Te llegará un aviso cuando alguien cumpla un hábito.';
-  else if (!pushPosible()) t = /iPhone|iPad/.test(navigator.userAgent) && !standalone() ? 'En iPhone, primero añade Focus a la pantalla de inicio (Compartir → Añadir a pantalla de inicio) y ábrela desde el icono. Después actívalos aquí.' : 'Este navegador no permite avisos.';
-  else if (Notification.permission === 'denied') t = 'Los avisos están bloqueados. Actívalos en Ajustes del móvil → Notificaciones → Focus.';
+  else if (!pushPosible()) t = /iPhone|iPad/.test(navigator.userAgent) && !standalone() ? 'En iPhone, primero añade la app a la pantalla de inicio (Compartir → Añadir a pantalla de inicio) y ábrela desde el icono. Después actívalos aquí.' : 'Este navegador no permite avisos.';
+  else if (Notification.permission === 'denied') t = 'Los avisos están bloqueados. Actívalos en Ajustes del móvil → Notificaciones → Op. Batman.';
   else t = 'Recibe un aviso cada vez que alguien del grupo cumple un hábito.';
   $('avTxt').textContent = t;
   $('bActivar').classList.toggle('hidden', act || !pushPosible());
@@ -531,8 +531,8 @@ $('bDesactivar').onclick = async () => {
 };
 
 $('bInvitar').onclick = async () => {
-  const texto = `Únete a mi reto "${reto.nombre}" en Focus 💪 Código: ${reto.code}\n${enlace()}`;
-  try { if (navigator.share) { await navigator.share({title: 'Focus', text: texto}); return; } } catch (e) { if (e.name === 'AbortError') return; }
+  const texto = `Únete a mi reto "${reto.nombre}" en Operación Batman 💪 Código: ${reto.code}\n${enlace()}`;
+  try { if (navigator.share) { await navigator.share({title: 'Operación Batman', text: texto}); return; } } catch (e) { if (e.name === 'AbortError') return; }
   try { await navigator.clipboard.writeText(texto); toast('Invitación copiada: pégala en WhatsApp'); } catch { toast('Copia el enlace de debajo'); }
 };
 $('fAjustes').onsubmit = async e => {
