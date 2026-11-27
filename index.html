@@ -7,12 +7,13 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Cartera">
-<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#000000">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
 <link rel="manifest" href="manifest.json">
 <title>Cartera</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
 <style>
 /*
 VOICE: tranquila y precisa, como una app de banca de calidad: el saldo manda, todo lo demás acompaña.
@@ -211,6 +212,43 @@ body.hubmode{background:radial-gradient(130% 60% at 0% 0%,color-mix(in srgb,var(
 .rt{display:flex;align-items:center;gap:10px;padding:9px 0}
 .rt+.rt{border-top:1px solid var(--line)}
 .rt .dd{font-size:12px;color:var(--muted)}
+/* ---- Tema "full negro" futurista (nov 2026): todo negro, acento cian eléctrico, cristal y brillo sutil ---- */
+:root,:root[data-theme=light],:root[data-theme=dark]{color-scheme:dark;
+--bg:#000;--card:#0a0b0f;--card2:#14161d;--ink:#f2f5f8;--muted:#7d8597;--line:#1d2029;
+--accent:#3de8ff;--gain:#3dffa2;--loss:#ff4d6a;--warn:#ffb03d;--r:20px;--glow:0 0 0 1px #ffffff0f,0 0 24px -12px #3de8ff99}
+html,body{background:#000;font-family:"Space Grotesk",-apple-system,BlinkMacSystemFont,"SF Pro Text",Arial,sans-serif;letter-spacing:-.005em}
+body.hubmode{background:radial-gradient(90% 45% at 50% -8%,#3de8ff1f 0%,#000 60%) fixed,#000}
+.card,.note,.addrow,.form,.search,.tpl{background:linear-gradient(180deg,#0e1016,#08090c);border:1px solid #ffffff10;box-shadow:var(--glow)}
+.card{border-radius:var(--r)}
+.balance,.widget .wv,.big,.exam .n,.hubhead h1{font-family:"Space Grotesk",-apple-system,sans-serif;font-weight:700;letter-spacing:-.03em}
+.balance{text-shadow:0 0 28px #3de8ff40}
+.pill{background:#0a0b0f;border:1px solid #ffffff14}
+.chg.gain{background:#3dffa21a;box-shadow:inset 0 0 0 1px #3dffa233}
+.chg.loss{background:#ff4d6a1a;box-shadow:inset 0 0 0 1px #ff4d6a33}
+.ranges button.on,.seg button.on{background:#3de8ff1a;color:var(--accent);box-shadow:inset 0 0 0 1px #3de8ff55}
+.seg{background:#0a0b0f;border:1px solid #ffffff10}
+.btn.pri{background:var(--accent);color:#001014;box-shadow:0 0 24px -6px #3de8ffaa}
+.btn.sec2{background:#0a0b0f;border:1px solid #3de8ff44;color:var(--accent)}
+.tabs{background:#05060acc;border:1px solid #ffffff14;box-shadow:0 0 0 1px #000,0 10px 40px -10px #000,0 0 30px -14px #3de8ff88}
+.tabs button.on{color:var(--accent);text-shadow:0 0 12px #3de8ff99}
+.tabs button.on svg{filter:drop-shadow(0 0 6px #3de8ffaa)}
+.sheet,.screen,.lock{background:#000}
+.sheet{border-top:1px solid #3de8ff33;box-shadow:0 -20px 50px -20px #3de8ff40}
+.sheethead{border-bottom-color:#ffffff12}
+.menu{background:#0a0b0f;border:1px solid #ffffff14;box-shadow:0 20px 50px #000,0 0 30px -12px #3de8ff66}
+.toast{background:var(--accent);color:#001014;box-shadow:0 0 24px -4px #3de8ffaa}
+.widget{background:linear-gradient(150deg,#0c1a22 0%,#05070b 60%);border:1px solid #3de8ff40;box-shadow:0 0 40px -16px #3de8ffaa,inset 0 1px 0 #ffffff12;color:var(--ink)}
+.widget .wc{background:#3de8ff1a;color:var(--accent)}
+.widget svg{opacity:.9;filter:drop-shadow(0 0 6px #3de8ff88)}
+.app .sq,.spacehero .sq{background:linear-gradient(160deg,#151821,#07080b)!important;border:1px solid #ffffff14;box-shadow:0 0 22px -10px #3de8ffaa,inset 0 1px 0 #ffffff14!important}
+.app.add .sq{border:1.5px dashed #3de8ff66!important;color:var(--accent)}
+.exam{background:linear-gradient(160deg,#101822,#06080b)!important;border:1px solid #3de8ff33;color:var(--ink)}
+.prog{background:#14161d}.prog i{box-shadow:0 0 10px var(--sc,var(--accent))}
+.chk.on{box-shadow:0 0 12px -2px var(--sc,var(--accent))}
+.row+.row,.task+.task,.today .it+.it,.rt+.rt,.field+.field{border-color:#ffffff0d}
+.ico{box-shadow:inset 0 0 0 1px #ffffff1f}
+.editor{background:#0a0b0f;border:1px solid #ffffff10}
+:focus-visible{outline-color:var(--accent)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
