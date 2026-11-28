@@ -8,7 +8,7 @@ export default {
     const cors = {
       'Access-Control-Allow-Origin': env.ALLOWED_ORIGIN || '*',
       'Access-Control-Allow-Methods': 'GET, PUT, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, X-Sync-Key',
+      'Access-Control-Allow-Headers': 'Content-Type, X-Sync-Key, X-Focus-Id, X-Focus-Token',
       'Access-Control-Max-Age': '86400',
     };
     if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
@@ -144,6 +144,8 @@ async function esquema(db) {
     db.prepare('CREATE TABLE IF NOT EXISTS fotos (code TEXT, id TEXT, fecha TEXT, habito TEXT, img TEXT, PRIMARY KEY (code, id, fecha, habito))'),
     db.prepare('CREATE TABLE IF NOT EXISTS subs (code TEXT, id TEXT, endpoint TEXT, p256dh TEXT, auth TEXT, ts INTEGER, PRIMARY KEY (code, endpoint))'),
     db.prepare('CREATE TABLE IF NOT EXISTS config (k TEXT PRIMARY KEY, v TEXT)'),
+    db.prepare('CREATE TABLE IF NOT EXISTS pesos (code TEXT, id TEXT, fecha TEXT, kg REAL, PRIMARY KEY (code, id, fecha))'),
+    db.prepare('CREATE TABLE IF NOT EXISTS prefs (code TEXT, id TEXT, peso_publico INTEGER DEFAULT 0, PRIMARY KEY (code, id))'),
   ]);
   esquemaListo = true;
 }
@@ -154,7 +156,9 @@ async function focus(request, env, url, json, ctx) {
   await esquema(db);
   const q = (sql, ...a) => db.prepare(sql).bind(...a);
 
-  const leerReto = async (code) => {
+  // viewer: id del miembro que pide los datos (ya autorizado). Ve sus kilos exactos; de los demás,
+  // solo cuánto han cambiado desde su primer peso, salvo que hayan elegido mostrar sus kilos.
+  const leerReto = async (code, viewer = null) => {
     const fila = await q('SELECT data FROM retos WHERE code = ?', code).first();
     if (!fila) return null;
     const r = JSON.parse(fila.data);
@@ -174,6 +178,17 @@ async function focus(request, env, url, json, ctx) {
       ((r.fotos[m.id] ||= {})[m.fecha] ||= {})[m.habito] = m.ts;
     }
     for (const id in r.marcas) for (const f in r.marcas[id]) r.marcas[id][f].sort((a, b) => orden.indexOf(a) - orden.indexOf(b));
+    const publicos = new Set((await q('SELECT id FROM prefs WHERE code = ? AND peso_publico = 1', code).all()).results.map(x => x.id));
+    const ps = (await q('SELECT id, fecha, kg FROM pesos WHERE code = ? ORDER BY fecha', code).all()).results;
+    r.pesos = {}; r.pesoPublico = {};
+    for (const id in r.miembros) r.pesoPublico[id] = publicos.has(id);
+    const primero = {};
+    for (const p of ps) {
+      if (!r.miembros[p.id]) continue;
+      primero[p.id] ??= p.kg;
+      const exacto = p.id === viewer || publicos.has(p.id);
+      (r.pesos[p.id] ||= []).push(exacto ? { f: p.fecha, kg: p.kg, d: Math.round((p.kg - primero[p.id]) * 10) / 10 } : { f: p.fecha, d: Math.round((p.kg - primero[p.id]) * 10) / 10 });
+    }
     return r;
   };
   const guardarDatos = (code, r) => q('UPDATE retos SET data = ? WHERE code = ?',
@@ -227,13 +242,15 @@ async function focus(request, env, url, json, ctx) {
     if (f > hoy) throw ferr(400, 'No puedes marcar días que aún no han llegado.');
     if (f < sumaDias(hoy, -1)) throw ferr(400, 'Solo puedes marcar hoy y ayer.');
   };
-  const borrarMiembro = (code, id) => db.batch(['miembros', 'marcas', 'fotos', 'subs'].map(t => q(`DELETE FROM ${t} WHERE code = ? AND id = ?`, code, id)));
+  const borrarMiembro = (code, id) => db.batch(['miembros', 'marcas', 'fotos', 'subs', 'pesos', 'prefs'].map(t => q(`DELETE FROM ${t} WHERE code = ? AND id = ?`, code, id)));
 
   const ruta = url.pathname.replace(/\/+$/, '');
   if (request.method === 'GET' && ruta === '/focus') {
     const code = texto(url.searchParams.get('c'), 12).toUpperCase();
     const r = await leerReto(code);
     if (!r) throw ferr(404, 'Ese reto no existe. Revisa el código.');
+    const vid = request.headers.get('X-Focus-Id');
+    if (vid && r.tokens[vid] && r.tokens[vid] === await sha(request.headers.get('X-Focus-Token') || '')) return json(vistaPublica(code, await leerReto(code, vid)));
     return json(vistaPublica(code, r));
   }
   if (request.method === 'GET' && ruta === '/focus/vapid') return json({ publicKey: (await vapid()).publicKey });
@@ -287,7 +304,7 @@ async function focus(request, env, url, json, ctx) {
       q('INSERT OR REPLACE INTO fotos (code, id, fecha, habito, img) VALUES (?, ?, ?, ?, ?)', code, body.id, body.fecha, h, img),
       q('INSERT OR REPLACE INTO marcas (code, id, fecha, habito, ts) VALUES (?, ?, ?, ?, ?)', code, body.id, body.fecha, h, Date.now()),
     ]);
-    const r = await leerReto(code);
+    const r = await leerReto(code, body.id);
     const n = (r.marcas[body.id]?.[body.fecha] || []).length, total = r.habitos.length, nombre = r.miembros[body.id].nombre;
     const hb = HABITOS.find(x => x.id === h);
     if (body.fecha === hoyMadrid()) avisar(code, body.id, n === total ? `🔥 ${nombre}: ¡día perfecto!` : `${hb.emoji} ${nombre}`,
@@ -299,7 +316,7 @@ async function focus(request, env, url, json, ctx) {
     await autorizar(r0, body.id, body.token);
     fechaValida(r0, body.fecha);
     await db.batch(['marcas', 'fotos'].map(t => q(`DELETE FROM ${t} WHERE code = ? AND id = ? AND fecha = ? AND habito = ?`, code, body.id, body.fecha, String(body.habito || ''))));
-    return json({ ok: true, reto: vistaPublica(code, await leerReto(code)) });
+    return json({ ok: true, reto: vistaPublica(code, await leerReto(code, body.id)) });
   }
   if (ruta === '/focus/avisos') {
     // Guarda (o quita) la suscripción de avisos de este móvil. Máximo 3 dispositivos por persona.
@@ -324,6 +341,27 @@ async function focus(request, env, url, json, ctx) {
       JSON.stringify({ title: 'Operación Batman', body: '✅ Los avisos funcionan. ¡A tope!', url: './' }), v).catch(() => 0)));
     return json({ ok: st.some(x => x >= 200 && x < 300), estados: st });
   }
+  if (ruta === '/focus/peso') {
+    // Apunta (o borra, con kg vacío) el peso de un día. Se puede apuntar desde 60 días antes del reto hasta hoy.
+    const r = await leerReto(code);
+    await autorizar(r, body.id, body.token);
+    if (!esFecha(body.fecha)) throw ferr(400, 'Fecha no válida');
+    if (body.fecha > hoyMadrid()) throw ferr(400, 'No puedes apuntar un peso de un día que aún no ha llegado.');
+    if (body.fecha < sumaDias(r.inicio, -60)) throw ferr(400, 'Esa fecha es demasiado antigua para este reto.');
+    if (body.kg === null || body.kg === '') await q('DELETE FROM pesos WHERE code = ? AND id = ? AND fecha = ?', code, body.id, body.fecha).run();
+    else {
+      const kg = Math.round(parseFloat(String(body.kg).replace(',', '.')) * 10) / 10;
+      if (!(kg >= 30 && kg <= 300)) throw ferr(400, 'Escribe un peso entre 30 y 300 kg.');
+      await q('INSERT OR REPLACE INTO pesos (code, id, fecha, kg) VALUES (?, ?, ?, ?)', code, body.id, body.fecha, kg).run();
+    }
+    return json({ ok: true, reto: vistaPublica(code, await leerReto(code, body.id)) });
+  }
+  if (ruta === '/focus/peso-visible') {
+    const r = await leerReto(code);
+    await autorizar(r, body.id, body.token);
+    await q('INSERT OR REPLACE INTO prefs (code, id, peso_publico) VALUES (?, ?, ?)', code, body.id, body.publico ? 1 : 0).run();
+    return json({ ok: true, reto: vistaPublica(code, await leerReto(code, body.id)) });
+  }
   if (ruta === '/focus/ajustes') {
     const r = await leerReto(code);
     await autorizar(r, body.id, body.token);
@@ -334,7 +372,7 @@ async function focus(request, env, url, json, ctx) {
     if (body.meta) r.meta = Math.min(r.dias * (HABITOS.length + 1), Math.max(10, parseInt(body.meta) || r.meta));
     await guardarDatos(code, r);
     if (body.expulsar && body.expulsar !== r.creador && r.miembros[body.expulsar]) await borrarMiembro(code, body.expulsar);
-    return json({ ok: true, reto: vistaPublica(code, await leerReto(code)) });
+    return json({ ok: true, reto: vistaPublica(code, await leerReto(code, body.id)) });
   }
   if (ruta === '/focus/salir') {
     const r = await leerReto(code);

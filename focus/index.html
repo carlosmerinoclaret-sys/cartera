@@ -123,6 +123,22 @@ nav button.on{color:var(--lime)}
 .banner{display:flex;gap:12px;align-items:center;background:var(--card2);border-radius:14px;padding:12px 14px;margin-bottom:14px}
 .banner p{margin:0;flex:1;font-size:14px}
 .banner .btn{width:auto;margin:0;padding:10px 14px;min-height:44px;font-size:15px}
+.pesoin{display:flex;gap:8px;flex-wrap:wrap}
+.pesoin input{flex:1 1 0;font-size:18px;font-weight:700}.pesoin input[type=date]{font-size:16px;font-weight:500}
+.pesoin .btn{flex:1 1 100%;margin:0}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0 6px}
+.kpis div{background:var(--card2);border-radius:14px;padding:10px;text-align:center}
+.kpis b{display:block;font-size:20px;font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap}
+.kpis span{font-size:12px;color:var(--mute)}
+.grafica{position:relative;height:150px;margin-top:8px}
+.grafica svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.entradas .fila{padding:8px 0}
+.entradas .x{color:var(--coral);min-height:44px;min-width:44px;font-weight:700}
+.dif{font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap}
+.dif.baja{color:var(--lime)}.dif.sube{color:var(--coral)}
+.spark{width:70px;height:26px;flex:none}
+.switch{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0 0;border-top:1px solid var(--line);margin-top:14px}
+.switch input{width:26px;height:26px;accent-color:#c6ff3d;flex:none}
 .aviso{background:#ff6b4a22;color:#ffb8a6;border-radius:12px;padding:10px 12px;font-size:14px;margin-bottom:12px}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -189,6 +205,17 @@ nav button.on{color:var(--lime)}
         <div class="leyenda">0 <i style="background:#1f232c"></i><i style="background:#3d4a1e"></i><i style="background:#6b8f1f"></i><i style="background:#98c92a"></i><i style="background:#c6ff3d"></i> <span id="leyMax">todos</span></div></div>
       <div class="card"><h2>Cumplimiento del grupo</h2><div id="stats"></div></div>
     </div>
+    <div id="vPeso" class="hidden">
+      <form class="card" id="fPeso"><h2>Mi peso</h2>
+        <div class="pesoin"><input id="pKg" type="text" inputmode="decimal" autocomplete="off" maxlength="6" placeholder="Peso en kg (ej. 78,4)" required>
+          <input id="pFecha" type="date" required><button class="btn" type="submit">Guardar</button></div>
+        <div class="kpis" id="pKpis"></div>
+        <div class="grafica" id="pGraf"></div>
+        <div class="entradas" id="pLista"></div>
+        <label class="switch"><span>Mostrar mis kilos exactos al grupo<br><span class="yo">Si no, solo ven cuánto has bajado o subido</span></span><input type="checkbox" id="pPublico"></label>
+      </form>
+      <div class="card"><h2>Peso del grupo</h2><p class="muted" style="margin-top:0">Cambio desde el primer peso apuntado de cada uno.</p><div id="pGrupo"></div></div>
+    </div>
     <div id="vReto" class="hidden">
       <div class="card" style="text-align:center"><div class="muted">Código para invitar</div><div class="codigo" id="rCode"></div>
         <button class="btn" id="bInvitar">Invitar amigos</button><p class="muted" id="rLink" style="word-break:break-all;margin-bottom:0"></p></div>
@@ -211,6 +238,7 @@ nav button.on{color:var(--lime)}
     <button data-v="vHoy" class="on"><b>✓</b>Hoy</button>
     <button data-v="vTablero"><b>🏁</b>Casillero</button>
     <button data-v="vGrupo"><b>👥</b>Grupo</button>
+    <button data-v="vPeso"><b>⚖︎</b>Peso</button>
     <button data-v="vReto"><b>⚙︎</b>Reto</button>
   </nav>
 </section>
@@ -249,7 +277,9 @@ function toast(t) { const el = $('toast'); el.textContent = t; el.classList.remo
 
 async function api(ruta, body) {
   let r;
-  try { r = await fetch(SERVER + ruta, body ? {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)} : {cache: 'no-store'}); }
+  const id = mem.retos?.[mem.activo] || {};
+  const cab = !body && id.id ? {'X-Focus-Id': id.id, 'X-Focus-Token': id.token} : {};
+  try { r = await fetch(SERVER + ruta, body ? {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)} : {cache: 'no-store', headers: cab}); }
   catch { throw new Error('Sin conexión. Inténtalo de nuevo.'); }
   let j = {}; try { j = await r.json(); } catch {}
   if (!r.ok) throw Object.assign(new Error(j.error || 'Error ' + r.status), {status: r.status});
@@ -287,8 +317,8 @@ function pintar() {
   $('hSub').textContent = `${corta(reto.inicio)} – ${corta(fin)} · ${Object.keys(reto.miembros).length} en el reto`;
   $('hDia').textContent = n < 1 ? `Empieza en ${1 - n} d` : n > reto.dias ? 'Terminado' : `Día ${n}/${reto.dias}`;
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.v === vista));
-  ['vHoy', 'vTablero', 'vGrupo', 'vReto'].forEach(v => $(v).classList.toggle('hidden', v !== vista));
-  ({vHoy: pintarHoy, vTablero: pintarTablero, vGrupo: pintarGrupo, vReto: pintarReto})[vista]();
+  ['vHoy', 'vTablero', 'vGrupo', 'vPeso', 'vReto'].forEach(v => $(v).classList.toggle('hidden', v !== vista));
+  ({vHoy: pintarHoy, vTablero: pintarTablero, vGrupo: pintarGrupo, vPeso: pintarPeso, vReto: pintarReto})[vista]();
 }
 
 function pintarHoy() {
@@ -385,6 +415,40 @@ function pintarReto() {
   if (soyCreador && document.activeElement?.closest('#fAjustes') == null) {
     $('aReto').value = reto.nombre; $('aInicio').value = reto.inicio; $('aDias').value = reto.dias; $('aMeta').value = reto.meta;
   }
+}
+
+// ---------- peso ----------
+const kgTxt = n => n.toLocaleString('es-ES', {minimumFractionDigits: 1, maximumFractionDigits: 1});
+const difTxt = d => (d > 0 ? '+' : d < 0 ? '−' : '±') + kgTxt(Math.abs(d)) + ' kg';
+function linea(svg, vals, color, conPuntos) {
+  const W = svg.clientWidth || 300, H = svg.clientHeight || 150, pad = conPuntos ? 10 : 2;
+  if (vals.length < 2) { svg.innerHTML = ''; return; }
+  const min = Math.min(...vals), max = Math.max(...vals), rango = max - min || 1;
+  const pts = vals.map((v, i) => [pad + i * (W - 2 * pad) / (vals.length - 1), pad + (1 - (v - min) / rango) * (H - 2 * pad)]);
+  svg.innerHTML = `<polyline fill="none" stroke="${color}" stroke-width="${conPuntos ? 3 : 2}" stroke-linejoin="round" stroke-linecap="round" points="${pts.map(p => p.join(',')).join(' ')}"/>` +
+    (conPuntos ? pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${color}"/>`).join('') : '');
+}
+let pesoFechaTocada = false;
+function pintarPeso() {
+  const mios = reto.pesos?.[yo().id] || [];
+  if (!pesoFechaTocada) $('pFecha').value = hoyLocal();
+  $('pFecha').max = hoyLocal();
+  $('pPublico').checked = !!reto.pesoPublico?.[yo().id];
+  const ult = mios[mios.length - 1], pri = mios[0];
+  $('pKpis').innerHTML = mios.length && ult.kg != null ? `<div><b>${kgTxt(pri.kg)}</b><span>Inicio · ${corta(pri.f)}</span></div><div><b>${kgTxt(ult.kg)}</b><span>Ahora · ${corta(ult.f)}</span></div><div><b class="dif ${ult.d < 0 ? 'baja' : ult.d > 0 ? 'sube' : ''}">${difTxt(ult.d)}</b><span>Cambio</span></div>` : '';
+  const g = $('pGraf'); g.classList.toggle('hidden', mios.length < 2);
+  if (mios.length >= 2) { g.innerHTML = '<svg></svg>'; linea(g.firstChild, mios.map(p => p.kg), '#c6ff3d', true); }
+  $('pLista').innerHTML = mios.length ? mios.slice().reverse().slice(0, 8).map(p => `<div class="fila"><span class="nm">${corta(p.f)}</span><span class="dif">${kgTxt(p.kg)} kg</span><button type="button" class="x" data-borrar-peso="${p.f}" aria-label="Borrar">✕</button></div>`).join('')
+    : '<p class="muted">Apunta tu peso de hoy para empezar. Lo ideal es pesarse una vez por semana, el mismo día y a la misma hora.</p>';
+  const filas = Object.entries(reto.miembros).map(([id, m]) => ({id, ...m, ps: reto.pesos?.[id] || []}))
+    .sort((a, b) => (a.ps.length ? a.ps[a.ps.length - 1].d : 99) - (b.ps.length ? b.ps[b.ps.length - 1].d : 99));
+  $('pGrupo').innerHTML = filas.map(m => {
+    const u = m.ps[m.ps.length - 1];
+    const extra = u ? `${u.kg != null ? kgTxt(u.kg) + ' kg · ' : ''}${corta(u.f)}` : 'Sin pesos apuntados';
+    return `<div class="fila"><span class="av" style="--c:${esc(m.color)}">${esc(m.emoji)}</span><span class="nm">${esc(m.nombre)} ${m.id === yo().id ? '<span class="yo">(tú)</span>' : ''}<br><span class="yo">${extra}</span></span>
+      ${m.ps.length > 1 ? `<svg class="spark" data-spark="${esc(m.id)}"></svg>` : ''}<span class="dif ${u && u.d < 0 ? 'baja' : u && u.d > 0 ? 'sube' : ''}">${u ? difTxt(u.d) : '—'}</span></div>`;
+  }).join('');
+  document.querySelectorAll('[data-spark]').forEach(svg => { const m = reto.miembros[svg.dataset.spark]; linea(svg, (reto.pesos[svg.dataset.spark] || []).map(p => p.d), m?.color || '#fff', false); });
 }
 
 function pintarInicio() {
@@ -493,6 +557,23 @@ $('mQuitar').onclick = async () => {
   const [f, h] = b.dataset.k.split('|');
   try { const r = await api('/focus/desmarcar', {code: mem.activo, id: yo().id, token: yo().token, fecha: f, habito: h}); $('mCerrar').onclick(); aplicar(r.reto); }
   catch (err) { toast(err.message); }
+};
+
+$('pFecha').onchange = () => { pesoFechaTocada = true; };
+$('fPeso').onsubmit = async e => {
+  e.preventDefault(); const b = e.target.querySelector('button[type=submit]'); b.disabled = true;
+  try { const r = await api('/focus/peso', {code: mem.activo, id: yo().id, token: yo().token, fecha: $('pFecha').value, kg: $('pKg').value});
+    $('pKg').value = ''; $('pKg').blur(); aplicar(r.reto); toast('⚖︎ Peso guardado'); }
+  catch (err) { toast(err.message); } finally { b.disabled = false; }
+};
+$('pLista').onclick = async e => {
+  const b = e.target.closest('[data-borrar-peso]'); if (!b) return;
+  if (b.dataset.ok !== '1') { b.dataset.ok = '1'; b.textContent = '¿Borrar?'; return; }
+  try { const r = await api('/focus/peso', {code: mem.activo, id: yo().id, token: yo().token, fecha: b.dataset.borrarPeso, kg: null}); aplicar(r.reto); } catch (err) { toast(err.message); }
+};
+$('pPublico').onchange = async () => {
+  try { const r = await api('/focus/peso-visible', {code: mem.activo, id: yo().id, token: yo().token, publico: $('pPublico').checked}); aplicar(r.reto); toast($('pPublico').checked ? 'El grupo verá tus kilos' : 'El grupo solo verá tu cambio'); }
+  catch (err) { $('pPublico').checked = !$('pPublico').checked; toast(err.message); }
 };
 
 // ---------- avisos (notificaciones push) ----------
